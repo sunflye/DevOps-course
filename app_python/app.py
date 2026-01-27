@@ -15,6 +15,7 @@ app = Flask(__name__)
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 START_TIME = datetime.now(timezone.utc)
 
 # Logging
@@ -133,4 +134,4 @@ def internal_error(error):
 if __name__ == "__main__":
     logger.info("Starting DevOps Info Service v1.0.0")
     logger.info(f"Server running at http://{HOST}:{PORT}")
-    app.run(host=HOST, port=PORT, debug=False)
+    app.run(host=HOST, port=PORT, debug=DEBUG)

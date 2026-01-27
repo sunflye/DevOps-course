@@ -36,6 +36,7 @@ Or with custom configuration:
 
 ```bash
 PORT=8080 HOST=127.0.0.1 python app.py
+DEBUG=true python app.py
 ```
 
 ## API Endpoints
@@ -63,4 +64,5 @@ curl http://localhost:5000/health
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Server host |
 | `PORT` | `5000` | Server port |
+| `DEBUG` | `False` | Enable debug mode |
 
