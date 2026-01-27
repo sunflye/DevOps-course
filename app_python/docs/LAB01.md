@@ -19,7 +19,7 @@ I selected Flask as my web framework for this project.
 
 **Reasoning:**
 
-Flask is lightweight and designed for building microservices, which is ideal for DevOps applications. The framework is easy to understand - there is minimal magic happening behind the scenes, making it perfect for learning web application fundamentals.
+I chose Flask because it is lightweight and designed for building microservices, which is ideal for DevOps applications. The framework is easy to understand - there is minimal magic happening behind the scenes, making it perfect for learning web application fundamentals.
 
 Flask has minimal dependencies, resulting in smaller Docker images, and its large community provides plenty of ready-made solutions.
 
