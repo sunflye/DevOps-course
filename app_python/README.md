@@ -66,3 +66,33 @@ curl http://localhost:5000/health
 | `PORT` | `5000` | Server port |
 | `DEBUG` | `False` | Enable debug mode |
 
+## Docker
+
+You can run this application in a container using Docker.
+
+### Build the image locally
+
+```bash
+docker build -t <yourusername>/devops-info-service:latest .
+```
+- Replace `<yourusername>` with your Docker Hub username.
+- This command builds the image from the Dockerfile in the current directory.
+
+### Run a container
+
+```bash
+docker run -p 5000:5000 <yourusername>/devops-info-service:latest
+```
+- Maps container port 5000 to host port 5000.
+- The app will be available at `http://localhost:5000`.
+
+### Pull from Docker Hub
+
+```bash
+docker pull <yourusername>/devops-info-service:latest
+
+docker run -p 5000:5000 <yourusername>/devops-info-service:latest
+```
+- Pulls the latest published image from Docker Hub and runs it.
+
+---
