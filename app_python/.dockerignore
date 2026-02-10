@@ -1,0 +1,21 @@
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env
+
+# System and IDE files
+.DS_Store
+*.log
+
+# Version control
+.git
+
+# Documentation and screenshots (not needed in container)
+docs/screenshots/
