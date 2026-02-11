@@ -2,7 +2,7 @@ name: Python CI/CD
 
 on:
   push:
-    branches: [ master, lab03 ]
+    branches: [ master, lab3 ]
     tags:
       - 'v*'
   pull_request:
