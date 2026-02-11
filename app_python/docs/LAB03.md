@@ -1,6 +1,6 @@
 # Lab 3 — Continuous Integration (CI/CD): 
 
-## Task 1 — Unit Testing (3 pts)
+## Task 1 — Unit Testing
 
 ### Testing Framework: pytest
 
