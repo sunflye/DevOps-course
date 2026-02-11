@@ -1,4 +1,4 @@
-# Lab 3 — Continuous Integration (CI/CD): Submission
+# Lab 3 — Continuous Integration (CI/CD): 
 
 ## Task 1 — Unit Testing (3 pts)
 
@@ -10,13 +10,29 @@
 - Built-in fixtures
 - Coverage reporting with pytest-cov
 
-### Test Coverage
+### Test structure
 
 Tests in `app_python/tests/test_app.py` cover:
 - `GET /` endpoint - JSON structure, all fields, data types
 - `GET /health` endpoint - Status, timestamp, uptime
 - Error handling (404 responses)
 - Data type validation
+
+The tests are organized into classes by endpoint and purpose:
+
+- **TestMainEndpoint** — tests for the main `/` endpoint.  
+  Checks status code, content type, presence and structure of all required fields, and correct data types in the main service response.
+
+- **TestHealthEndpoint** — tests for the `/health` endpoint.  
+  Verifies the health check response, including status, timestamp, and uptime fields.
+
+- **TestErrorHandling** — tests for error handling (e.g., 404 errors).  
+  Ensures that invalid routes return the correct error code and JSON error format.
+
+- **TestDataTypes** — tests for data type validation in responses.  
+  Confirms that all fields in the main endpoint response have the expected data types.
+
+Each class contains multiple test methods to cover both successful and error scenarios, ensuring comprehensive coverage of the application’s API.
 
 ### Running Tests Locally
 
@@ -28,15 +44,45 @@ pytest tests/ -v --cov=app --cov-report=term
 ### Test Results
 
 ```
-tests/test_app.py::TestMainEndpoint::test_main_endpoint_status_code PASSED
-tests/test_app.py::TestMainEndpoint::test_main_endpoint_content_type PASSED
-...
-======================== 15 passed in 0.25s ========================
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course\app_python> pytest tests/ -v --cov=app --cov-report=term
+==================================================== test session starts =====================================================
+platform win32 -- Python 3.13.5, pytest-7.4.3, pluggy-1.6.0 -- D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course\app_python
+plugins: cov-4.1.0
+collected 15 items                                                                                                            
+
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_status_code PASSED                                              [  6%]
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_content_type PASSED                                             [ 13%] 
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_service_data PASSED                                             [ 20%] 
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_system_data PASSED                                              [ 26%] 
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_runtime_data PASSED                                             [ 33%] 
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_request_data PASSED                                             [ 40%] 
+tests/test_app.py::TestMainEndpoint::test_main_endpoint_endpoints_list PASSED                                           [ 46%] 
+tests/test_app.py::TestHealthEndpoint::test_health_endpoint_status_code PASSED                                          [ 53%] 
+tests/test_app.py::TestHealthEndpoint::test_health_endpoint_content_type PASSED                                         [ 60%] 
+tests/test_app.py::TestHealthEndpoint::test_health_endpoint_status_field PASSED                                         [ 66%] 
+tests/test_app.py::TestHealthEndpoint::test_health_endpoint_timestamp PASSED                                            [ 73%] 
+tests/test_app.py::TestHealthEndpoint::test_health_endpoint_uptime PASSED                                               [ 80%] 
+tests/test_app.py::TestErrorHandling::test_404_not_found PASSED                                                         [ 86%] 
+tests/test_app.py::TestErrorHandling::test_404_response_is_json PASSED                                                  [ 93%]
+tests/test_app.py::TestDataTypes::test_main_endpoint_data_types PASSED                                                  [100%] 
+
+---------- coverage: platform win32, python 3.13.5-final-0 -----------
+Name     Stmts   Miss  Cover
+----------------------------
+app.py      46      5    89%
+----------------------------
+TOTAL       46      5    89%
+
+
+===================================================== 15 passed in 0.35s ===================================================== 
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course\app_python> 
 ```
 
 ---
 
-## Task 2 — GitHub Actions CI Workflow (4 pts)
+## Task 2 — GitHub Actions CI Workflow 
 
 ### Workflow Overview
 
@@ -50,6 +96,12 @@ The workflow automates:
 
 ### Workflow Triggers
 
+The workflow runs on:
+- Push to `master` or `lab3` (full CI/CD, including Docker build and push)
+- Pull requests to `master` (runs tests and lint only, no Docker build)
+- Git tags starting with `v` (builds and pushes with SemVer tag)
+
+This ensures that only production-ready code triggers Docker builds, while PRs are tested for quality and correctness before merging.
 ```yaml
 on:
   push:
@@ -64,6 +116,16 @@ on:
 - **Push to master/lab3:** Run tests → Build Docker image
 - **Pull Request to master:** Run tests only (no Docker build)
 - **Git tag (v1.0.0):** Run tests → Build Docker image with SemVer version
+
+### Marketplace Actions Used
+
+- `actions/checkout@v4`: Official action to clone the repository.
+- `actions/setup-python@v5`: Official action to set up Python with caching.
+- `docker/login-action@v3`: Secure Docker Hub authentication.
+- `docker/build-push-action@v5`: Efficient Docker build and push with caching.
+- `codecov/codecov-action@v4`: Uploads coverage reports to Codecov.
+
+These actions are chosen for reliability, security, and community support.
 
 ### Versioning Strategy: Hybrid (CalVer + SemVer)
 
@@ -82,6 +144,11 @@ on:
 - SemVer useful for explicit releases
 - Both approaches provide flexibility
 
+### Workflow Evidence
+
+- [![Python CI/CD](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml)
+- ![Green checkmark screenshot](./screenshots/04-workflow.png)
+
 ### Workflow Jobs
 
 **Job 1: test**
@@ -98,13 +165,6 @@ on:
 - Builds Docker image with Buildx
 - Pushes to Docker Hub with 2 tags
 
-### CI Best Practices Implemented
-
-1. **Fail Fast** - Docker only builds if tests pass (`needs: test`)
-2. **Caching** - pip cache for faster builds (`cache: 'pip'`)
-3. **Docker Layer Caching** - GHA cache for Docker layers (`cache-from: type=gha`)
-4. **Security** - Secrets for credentials (not hardcoded)
-5. **Selective Triggers** - PR runs only tests, push runs full CI/CD
 
 ### Docker Hub Images
 
@@ -112,77 +172,13 @@ All images available at:
 https://hub.docker.com/r/sunflye/devops-info-service
 
 **Example tags:**
-- `sunflye/devops-info-service:2024.01.27`
+- `sunflye/devops-info-service:2026.02.11`
 - `sunflye/devops-info-service:latest`
 
 ---
-
 ## Task 3 — CI Best Practices & Security (3 pts)
 
-### Best Practices Applied
-
-1. **Dependency Caching**
-   - Setup Python action includes pip cache
-   - Cache key: `requirements.txt` hash
-   - Saves ~30-40 seconds per build
-
-2. **Job Dependencies**
-   - Docker build only runs if tests pass
-   - Prevents broken images from being pushed
-
-3. **Security: Secrets Management**
-   - DOCKER_USERNAME and DOCKER_TOKEN stored as GitHub Secrets
-   - Not visible in logs or code
-
-4. **Linting with Strict Mode**
-   - First pass: `--select=E9,F63,F7,F82` (critical errors only)
-   - Second pass: full linting with `--exit-zero` (don't fail)
-
-5. **Coverage Reporting**
-   - pytest-cov generates coverage reports
-   - Uploaded to Codecov for tracking
-
-### Workflow Status Badge
-
-Add to `README.md`:
-```markdown
-[![Python CI/CD](https://github.com/yourusername/yourrepo/actions/workflows/python-ci.yml/badge.svg)](https://github.com/yourusername/yourrepo/actions/workflows/python-ci.yml)
-```
-
-### Security Scanning (Snyk)
-
-Optional: Could add Snyk for vulnerability scanning:
-```yaml
-- name: Run Snyk
-  uses: snyk/actions/python-3.13@master
-  env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-```
-
 ---
-
-## Challenges & Solutions
-
-### Challenge 1: Docker credentials
-**Solution:** Used GitHub Secrets for DOCKER_USERNAME and DOCKER_TOKEN
-
-### Challenge 2: Multiple tags in workflow
-**Solution:** Used pipe-separated tags in `docker/build-push-action`
-
-### Challenge 3: CalVer vs SemVer
-**Solution:** Implemented hybrid approach with conditional logic
-
----
-
-## Evidence
-
-- ✅ Workflow file at `.github/workflows/python-ci.yml`
-- ✅ Tests passing locally (15/15 passed)
-- ✅ Workflow runs automatically on push/PR
-- ✅ Docker images published to Docker Hub with version tags
-- ✅ Coverage reports generated
-
-## Task 3 — CI Best Practices & Security (3 pts)
 
 ### Best Practices Applied
 
@@ -227,25 +223,11 @@ if: github.event_name == 'push'  # Docker build only on push
 **Implementation:**
 - pytest-cov generates coverage reports
 - Uploaded to Codecov for tracking
+
 **Why:** Visibility into code coverage trends and quality.
 
-### Status Badge
 
-Added GitHub Actions badge to README showing workflow status:
 
-[![Python CI/CD](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml)
-
-### Security Scanning (Snyk)
-
-**Integration:**
-- Snyk scans `requirements.txt` for known vulnerabilities
-- Configured with `--severity-threshold=high` (only fails on high/critical)
-- Runs in parallel with main testing job
-
-**Results:**
-- Current scan: [add results after implementation]
-- Any vulnerabilities found: [document here]
-- Actions taken: [document remediation if any]
 
 ### Performance Improvements
 
@@ -258,3 +240,25 @@ Added GitHub Actions badge to README showing workflow status:
 - **Cold build:** ~60 seconds
 - **Warm build:** ~15 seconds (if only code changed)
 - **Speed improvement:** ~4x faster rebuilds
+
+### Security Scanning (Snyk)
+
+**Integration:**
+- Snyk scans `requirements.txt` for known vulnerabilities
+- Configured with `--severity-threshold=high` (only fails on high/critical)
+- Runs in parallel with main testing job
+
+**Results:**
+```
+Testing /github/workspace...
+
+Organization:      sunflye
+Package manager:   pip
+Target file:       app_python/requirements.txt
+Project name:      app_python
+Open source:       no
+Project path:      /github/workspace
+Licenses:          enabled
+
+✔ Tested /github/workspace for known issues, no vulnerable paths found.
+```
