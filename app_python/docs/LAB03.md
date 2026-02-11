@@ -231,15 +231,28 @@ if: github.event_name == 'push'  # Docker build only on push
 
 ### Performance Improvements
 
-**Caching Results:**
-- **Before caching:** ~2-3 minutes full build
-- **After caching (cache hit):** ~30-45 seconds
-- **Speed improvement:** ~4x faster on cache hits
+**Workflow timing comparison (real runs):**
 
-**Docker Layer Caching:**
-- **Cold build:** ~60 seconds
-- **Warm build:** ~15 seconds (if only code changed)
-- **Speed improvement:** ~4x faster rebuilds
+| Scenario         | Total duration | test job | build-and-push job |
+|------------------|---------------|----------|--------------------|
+| Without cache    | 1m 14s        | 40s      | 25s                |
+| With cache       | 1m 13s        | 39s      | 26s                |
+
+<details>
+<summary>Without cache</summary>
+
+![Without cache](./screenshots/05-without_cache.png)
+</details>
+
+<details>
+<summary>With cache</summary>
+
+![With cache](./screenshots/06-with_cache.png)
+</details>
+
+**Conclusion:**  
+In this project, the workflow is already highly optimized, so the difference between runs with and without cache is minimal (about 1 second).  
+However, in larger projects or with more dependencies, caching can save significant time.
 
 ### Security Scanning (Snyk)
 
