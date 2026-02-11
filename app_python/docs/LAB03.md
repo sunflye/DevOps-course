@@ -176,7 +176,7 @@ https://hub.docker.com/r/sunflye/devops-info-service
 - `sunflye/devops-info-service:latest`
 
 ---
-## Task 3 — CI Best Practices & Security (3 pts)
+## Task 3 — CI Best Practices & Security
 
 ---
 
@@ -210,6 +210,7 @@ cache-to: type=gha,mode=max
 **Implementation:**
 - `DOCKER_USERNAME` and `DOCKER_TOKEN` stored as GitHub Secrets
 - No credentials hardcoded in workflow files
+
 **Why:** Security best practice, prevents credential leaks.
 
 #### 5. **Conditional Triggers**
