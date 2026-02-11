@@ -96,3 +96,7 @@ docker run -p 5000:5000 <yourusername>/devops-info-service:latest
 - Pulls the latest published image from Docker Hub and runs it.
 
 ---
+
+## CI/CD Status
+
+[![Python CI/CD](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml)
