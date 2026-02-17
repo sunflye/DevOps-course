@@ -60,10 +60,7 @@ terraform/
 - Output public IP and ready-to-use SSH command.
 - Sensitive files (`*.tfstate`, `*.pem`, `.terraform/`) included in `.gitignore`.
 
-**Challenges Encountered:**
-- Changing public IP after instance stop/start (documented in this report).
-- Coordination of SSH key permission and `terraform apply`.
-- Remembering to update Security Group when public IP changes for more secure setups.
+
 
 ---
 
@@ -117,6 +114,10 @@ public_ip = "34.233.135.93"
 ssh_command = "ssh -i labsuser.pem ubuntu@34.233.135.93"
 ```
 
+**Public IP of created VM:**
+```
+34.233.135.93
+```
 ---
 
 **SSH Connection proof:**
@@ -130,11 +131,6 @@ ubuntu@ip-172-31-20-177:~$
 ```
 
 ---
-
-> *Note: AWS assigns a **new public IP** every time the instance is stopped and restarted (unless you use an Elastic IP). The IP in this document matches what was used for successful SSH access during the lab.*
-
----
-
 ## Task 2 — Pulumi VM Creation
 
 ---
@@ -147,7 +143,9 @@ I chose **Python** as the language for my Pulumi implementation because it is wi
 ```bash
 pulumi version
 v3.220.0
+```
 ---
+
 
 ### 2. Terraform Destroy Output
 
