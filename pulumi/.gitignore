@@ -1,31 +1,27 @@
-# Python
+# Pulumi
+venv/
+node_modules/
 *.pyc
 __pycache__/
-venv/
-.env/
-
-# Pulumi
-Pulumi.*.yaml               # stack configs, may contain secrets!
-Pulumi.yaml.lock
-*.pem                       # AWS private key(s)
-*.bak
-# Если venv для pulumi внутри папки:
-pulumi/venv/
-
-# AWS/Pulumi credentials/secret config files (если локально)
-.aws/
+Pulumi.*.yaml
 .pulumi/
 
-# Terraform
+# Secrets & Keys
+*.pem
+*.key
+*.pub
+labsuser.pem
+vockey.pem
+authorized_key.json
+credentials
+terraform.tfvars
+
+# State files
 *.tfstate
 *.tfstate.*
 .terraform/
-terraform.tfvars
 
-# Others (customize as needed)
-*.log
-.DS_Store
-
-# Optionally ignore IDE files:
-.vscode/
+# IDE
 .idea/
+*.swp
+.vscode/
