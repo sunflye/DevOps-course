@@ -281,7 +281,6 @@ vm = aws.ec2.Instance(
 **Which approach do you prefer and why?**
 - For simple, repeatable cloud resources, I prefer Terraform for its simplicity.
 ---
----
 
 ### 8. Advantages of Pulumi Discovered
 
