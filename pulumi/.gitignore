@@ -1,0 +1,27 @@
+# Pulumi
+venv/
+node_modules/
+*.pyc
+__pycache__/
+Pulumi.*.yaml
+.pulumi/
+
+# Secrets & Keys
+*.pem
+*.key
+*.pub
+labsuser.pem
+vockey.pem
+authorized_key.json
+credentials
+terraform.tfvars
+
+# State files
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# IDE
+.idea/
+*.swp
+.vscode/
