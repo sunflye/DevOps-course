@@ -29,7 +29,7 @@
   - App port (5000) open to all (`0.0.0.0/0`)
 - **Public IP:** Assigned automatically at creation. _(Note: may change on stop/start unless Elastic IP attached)_
 
-![Instance example](./screenshots/07-instanse.png)
+![Instance example](/app_python/docs/screenshots/07-instanse.png)
 
 ---
 
