@@ -21,32 +21,32 @@ python version = 3.12.3
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Local Machine (Ansible Control Node)               │
+│ Local Machine (Ansible Control Node)                │
 ├─────────────────────────────────────────────────────┤
-│                                                      │
-│  ansible/                                            │
-│  ├── inventory/hosts.ini  → aws-vm (34.229.125.207)│
+│                                                     │
+│  ansible/                                           │
+│  ├── inventory/hosts.ini  → aws-vm (34.229.125.207) │
 │  ├── ansible.cfg          → Configuration           │
-│  ├── playbooks/                                      │
-│  │   ├── provision.yml → common + docker roles     │
-│  │   └── deploy.yml    → app_deploy role           │
-│  │                                                   │
-│  └── roles/                                          │
-│      ├── common/        → Update apt, install pkgs │
-│      ├── docker/        → Install & configure      │
-│      └── app_deploy/    → Pull image, run container│
-│                                                      │
+│  ├── playbooks/                                     │
+│  │   ├── provision.yml → common + docker roles      │
+│  │   └── deploy.yml    → app_deploy role            │
+│  │                                                  │
+│  └── roles/                                         │
+│      ├── common/        → Update apt, install pkgs  │
+│      ├── docker/        → Install & configure       │
+│      └── app_deploy/    → Pull image, run container │
+│                                                     │
 └────────────┬────────────────────────────────────────┘
              │ SSH + Ansible
              ↓
 ┌─────────────────────────────────────────────────────┐
-│ AWS EC2 Ubuntu 24.04 (34.229.125.207)             │
+│ AWS EC2 Ubuntu 24.04 (34.229.125.207)               │
 ├─────────────────────────────────────────────────────┤
-│ Common packages installed (curl, git, vim, etc) │
-│ Docker installed and running                    │
-│ python3-docker installed                        │
-│ devops-app container running on port 5000      │
-│ Health endpoint responding                      │
+│ Common packages installed (curl, git, vim, etc)     │
+│ Docker installed and running                        │
+│ python3-docker installed                            │
+│ devops-app container running on port 5000           │
+│ Health endpoint responding                          │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -168,66 +168,7 @@ dockerhub_password: <Token>
       HOST: "0.0.0.0"
     force_kill: yes
 ```
-
-**Dependencies:** 
-
-Implicitly depends on Docker role (Docker must be installed before deploying containers)
-
 ---
-
-### 2.3 App_Deploy Role
-
-**Purpose:** Securely deploy Python application using Docker with Vault credentials.
-
-**Location:** `roles/app_deploy/`
-
-**Tasks Performed:**
-1. Login to Docker Hub using encrypted credentials (no_log for security)
-2. Pull Docker image from registry
-3. Stop existing container (if running, ignore if not exists)
-4. Remove old container (if exists, ignore if not)
-5. Run new container with:
-   - Port mapping (5000:5000)
-   - Environment variables (PORT, HOST)
-   - Restart policy (unless-stopped)
-   - Container name
-6. Wait for port 5000 to be available (up to 30 seconds)
-7. Verify health endpoint responds with 200 (retry up to 5 times)
-8. Display health check result
-
-
-**Key Variables (`roles/app_deploy/defaults/main.yml`):**
-```yaml
-app_name: devops-app
-docker_image: devops-info-service
-docker_image_tag: latest
-app_port: 5000
-app_internal_port: 5000
-app_container_name: "{{ app_name }}"
-restart_policy: unless-stopped
-```
-
-**Encrypted Variables (`group_vars/all.yml` - encrypted with Vault):**
-```yaml
-dockerhub_username: sunflye
-dockerhub_password: <Token>
-```
-
-**Handlers (`roles/app_deploy/handlers/main.yml`):**
-```yaml
-- name: restart app
-  community.docker.docker_container:
-    name: "{{ app_container_name }}"
-    image: "{{ docker_image }}:{{ docker_image_tag }}"
-    state: started
-    ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-    restart_policy: "{{ restart_policy }}"
-    env:
-      PORT: "{{ app_internal_port | string }}"
-      HOST: "0.0.0.0"
-    force_kill: yes
-```
 
 **Dependencies:** Implicitly depends on Docker being installed (though not formally declared)
 
@@ -556,7 +497,7 @@ Roles provide code reusability and maintainability at scale. Rather than writing
 
 ### 6.2 How do roles improve reusability?
 
-Each role has a single responsibility (common system setup, Docker installation, app deployment). This separation means the `docker` role can be used on any server type—database servers, app servers, monitoring systems—without modification. Variables in `defaults/` allow customization without changing role logic, making roles portable across projects and organizations.
+Each role has a single responsibility (common system setup, Docker installation, app deployment). This separation means the `docker` role can be used on any server type - database servers, app servers, monitoring systems - without modification. Variables in `defaults/` allow customization without changing role logic, making roles portable across projects and organizations.
 
 ---
 
