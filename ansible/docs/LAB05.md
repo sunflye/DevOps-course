@@ -168,8 +168,6 @@ dockerhub_password: <Token>
       HOST: "0.0.0.0"
     force_kill: yes
 ```
----
-
 **Dependencies:** Implicitly depends on Docker being installed (though not formally declared)
 
 ---
