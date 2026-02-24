@@ -1,0 +1,28 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Terraform variable files with secrets
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+
+# Cloud credentials
+labsuser.pem
+*.pem
+*.key
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
