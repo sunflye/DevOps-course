@@ -1,1 +1,52 @@
-test
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+
+# === Terraform ===
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/*.tfvars
+terraform/labsuser.pem
+
+# === Pulumi ===
+pulumi/venv/
+pulumi/__pycache__/
+pulumi/Pulumi.*.yaml
+
+# === Ansible ===
+ansible/*.retry
+ansible/.vault_pass
+ansible/__pycache__/
+ansible/labsuser.pem
+ansible/group_vars/.vault_pass
+
+# === Secrets & Keys ===
+*.pem
+*.key
+*.pub
+.env
+.vault_pass
+credentials
+secrets/
+authorized_keys
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log

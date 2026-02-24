@@ -1,0 +1,19 @@
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - packages
+
+- name: Install common packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+  tags:
+    - packages
+
+- name: Set timezone to UTC
+  timezone:
+    name: UTC
+  tags:
+    - system
