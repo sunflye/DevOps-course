@@ -1,19 +1,50 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+---
+- name: Update and install packages
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Retry apt update with fix-missing
+      apt:
+        update_cache: yes
+        update_cache_retries: 5
+        cache_valid_time: 3600
+      register: apt_retry
+
+    - name: Fail if apt update still failed
+      fail:
+        msg: "apt cache update failed even after retry"
+      when: apt_retry is failed
+
+  always:
+    - name: Log package installation completion
+      copy:
+        content: "Package installation completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: "/tmp/common_role_completion.log"
+
   tags:
     - packages
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-  tags:
-    - packages
+- name: Configure system
+  block:
+    - name: Set timezone to UTC
+      timezone:
+        name: UTC
 
-- name: Set timezone to UTC
-  timezone:
-    name: UTC
+  always:
+    - name: Log system configuration completion
+      copy:
+        content: "System configuration completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: "/tmp/system_config_completion.log"
+
   tags:
     - system
+    - common
