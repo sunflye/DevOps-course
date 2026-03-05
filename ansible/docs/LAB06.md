@@ -1,6 +1,6 @@
 # Lab 6 — Advanced Ansible & CI/CD
 
-## 1. Overview
+## Overview
 
 **What I Accomplished:**
 - Refactored Ansible roles with blocks and tags for better control
