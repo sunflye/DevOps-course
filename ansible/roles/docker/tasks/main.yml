@@ -2,7 +2,7 @@
 - name: Docker installation and setup
   block:
     - name: Install Docker prerequisites
-      apt:
+      ansible.builtin.apt:
         name:
           - apt-transport-https
           - ca-certificates
@@ -12,17 +12,17 @@
         state: present
 
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -31,36 +31,35 @@
 
   rescue:
     - name: Wait before retrying
-      pause:
+      ansible.builtin.pause:
         seconds: 10
 
     - name: Retry apt update
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 3600
-      register: apt_retry
+      register: docker_apt_retry
 
     - name: Retry Docker installation
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
           - containerd.io
         state: present
-      when: apt_retry is succeeded
 
   always:
     - name: Ensure Docker service is started and enabled
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Log Docker installation completion
-      copy:
+      ansible.builtin.copy:
         content: "Docker installation completed at {{ ansible_date_time.iso8601 }}\n"
         dest: "/tmp/docker_install_completion.log"
-        force: no
+        mode: '0644'
 
   tags:
     - docker
@@ -69,23 +68,23 @@
 - name: Docker user configuration
   block:
     - name: Add ubuntu user to docker group
-      user:
+      ansible.builtin.user:
         name: ubuntu
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python3-docker via apt
-      apt:
+      ansible.builtin.apt:
         name: python3-docker
         state: present
 
   always:
     - name: Log Docker user configuration completion
-      copy:
+      ansible.builtin.copy:
         content: "Docker user configuration completed at {{ ansible_date_time.iso8601 }}\n"
         dest: "/tmp/docker_config_completion.log"
-        force: no
+        mode: '0644'
 
   tags:
     - docker
-    - docker_config
+    - docker_install
