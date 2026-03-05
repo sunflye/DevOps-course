@@ -278,7 +278,7 @@ aws-vm                     : ok=7    changed=1    unreachable=0    failed=0    s
  
 ## Task 2: Docker Compose Migration
 
-### 3.1 Implementation
+### Implementation
 
 **File:** `roles/web_app/tasks/main.yml`
 
@@ -293,7 +293,7 @@ Replaced individual `docker run` with Docker Compose v2:
     recreate: auto
 ```
 
-### 3.2 Docker Compose Template
+### Docker Compose Template
 
 **File:** `roles/web_app/templates/docker-compose.yml.j2`
 
@@ -326,7 +326,7 @@ services:
 - `web_app_internal_port` - Container port (5000)
 - `web_app_restart_policy` - Restart behavior (unless-stopped)
 
-### 3.3 Role Dependencies
+### Role Dependencies
 
 **File:** `roles/web_app/meta/main.yml`
 
