@@ -18,7 +18,7 @@
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
-        repo: repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install Docker packages
@@ -57,7 +57,7 @@
 
     - name: Log Docker installation completion
       ansible.builtin.copy:
-        content: "Docker installation completed at {{ ansible_facts['date_time']['iso8601'] }}\n"
+        content: "Docker installation completed at {{ ansible_date_time.iso8601 }}\n"
         dest: "/tmp/docker_install_completion.log"
         mode: '0644'
 
@@ -81,7 +81,7 @@
   always:
     - name: Log Docker user configuration completion
       ansible.builtin.copy:
-        content: "Docker user configuration completed at {{ ansible_facts['date_time']['iso8601'] }}\n"
+        content: "Docker user configuration completed at {{ ansible_date_time.iso8601 }}\n"
         dest: "/tmp/docker_config_completion.log"
         mode: '0644'
 
