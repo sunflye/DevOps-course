@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**What You Accomplished:**
+**What I Accomplished:**
 - Refactored Ansible roles with blocks and tags for better control
 - Upgraded application deployment from `docker run` to Docker Compose v2
 - Implemented safe wipe logic with double-safety gates (variable + tag)
@@ -33,7 +33,7 @@ Health check verification
 ✅ Deployment complete
 ```
 
-## Task 1: Blocks & Tags Refactoring (2 pts)
+## Task 1: Blocks & Tags Refactoring
 
 ### Implementation
 
@@ -579,7 +579,7 @@ Requirement 2: Tag Gate
   
 Both required for execution 
 ```
-### 4.3 Evidence: Scenario 1 (Normal Deployment - Wipe Skipped)
+### Evidence: Scenario 1 (Normal Deployment - Wipe Skipped)
 
 ```
 root@eb4c97f4930a:/workspace/ansible# ansible-playbook playbooks/deploy.yml --ask-vault-pass
