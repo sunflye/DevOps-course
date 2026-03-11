@@ -1,0 +1,8 @@
+---
+- name: Restart app
+  community.docker.docker_compose_v2:
+    project_src: "{{ web_app_compose_project_dir }}"
+    state: present
+    pull: always
+  tags:
+    - web_app

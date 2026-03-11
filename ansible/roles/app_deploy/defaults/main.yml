@@ -1,7 +1,0 @@
-app_name: devops-app
-docker_image: "devops-info-service"
-docker_image_tag: latest
-app_port: 5000
-app_internal_port: 5000
-app_container_name: "{{ app_name }}"
-restart_policy: unless-stopped

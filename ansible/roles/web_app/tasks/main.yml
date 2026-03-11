@@ -1,0 +1,77 @@
+---
+# Wipe logic runs first (when explicitly requested)
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Now deploy with Docker Compose
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+    - web_app
+  block:
+    - name: Remove old container (idempotent)
+      community.docker.docker_container:
+        name: "{{ web_app_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose.yml
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+      register: web_app_compose_template
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: present
+        pull: missing
+        recreate: auto
+      register: web_app_compose_result
+
+    - name: Wait for application to be ready
+      ansible.builtin.wait_for:
+        port: "{{ web_app_port }}"
+        delay: 2
+        timeout: 30
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ web_app_port }}/health"
+        status_code: 200
+      register: web_app_health_check
+      retries: 5
+      delay: 5
+
+    - name: Display health check result
+      ansible.builtin.debug:
+        msg: "✅ Application is healthy: {{ web_app_health_check.json.status | default('ok') }}"
+
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment failed, attempting rollback"
+
+    - name: Rollback deployment
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: absent
+      failed_when: false
+
+  always:
+    - name: Log deployment completion
+      ansible.builtin.copy:
+        content: "Deployment completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: "/tmp/web_app_deployment.log"
+        mode: '0644'
+        force: false
