@@ -120,6 +120,7 @@ common:
 - **Relabeling:** Extracts useful labels (app, container_name, image, job) from Docker metadata for log filtering and querying.
 - **Low cardinality labels:** Avoids performance issues by not indexing unique values (like container IDs).
 - **Positions file:** Tracks log read progress, prevents duplicate ingestion.
+
 **Example snippet:**
 ```yaml
 scrape_configs:
@@ -151,7 +152,7 @@ positions:
 
 ### Implementation
 
-- Used a custom `JSONFormatter` class in [`app_python/app.py`](app_python/app.py) to output logs in structured JSON format.
+- Used a custom `JSONFormatter` class in `app_python/app.py` to output logs in structured JSON format.
 - Configured Python's `logging` module to use this formatter for all log messages.
 - Logs include fields: `timestamp`, `level`, `logger`, `message`, and (if available) `endpoint`, `method`, `status_code`, `response_time`, `request_id`, and exception info.
 - Logging occurs for:
@@ -283,7 +284,7 @@ sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))
 ---
  ## Task 2 — Integrate Your Applications
 
-**SJSON log output from your app:**
+**JSON log output from your app:**
 ![json](./screenshots/app_json_task2.png)
 
 **Grafana showing logs from both applications:**
@@ -295,7 +296,7 @@ sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))
 **Only info logs:**
 ![info](./screenshots/info_logs_task2.png)
 
-** With error word:**
+**With error word:**
 ![error](./screenshots/error_task2.png)
 
 ## Task 3 — Build Log Dashboard 
