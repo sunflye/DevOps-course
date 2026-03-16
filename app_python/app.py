@@ -3,8 +3,10 @@ import socket
 import platform
 import logging
 import json
+import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response, g
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 
@@ -14,7 +16,7 @@ PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 START_TIME = datetime.now(timezone.utc)
 
-# JSON Logging Configuration
+# ==================== JSON Logging ====================
 class JSONFormatter(logging.Formatter):
     """Custom formatter that outputs JSON logs."""
     
@@ -27,13 +29,11 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
         
-        # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
         
         return json.dumps(log_data)
 
-# Setup JSON logging
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger = logging.getLogger(__name__)
@@ -41,6 +41,41 @@ logger.handlers.clear()
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
+# ==================== Prometheus Metrics ====================
+
+# HTTP Request Metrics
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 5.0]
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# Application-Specific Metrics
+devops_info_endpoint_calls = Counter(
+    'devops_info_endpoint_calls',
+    'Devops info endpoint calls',
+    ['endpoint']
+)
+
+system_info_collection_seconds = Histogram(
+    'devops_info_system_collection_seconds',
+    'System info collection time',
+    buckets=[0.01, 0.05, 0.1, 0.5]
+)
+
+# ==================== Helper Functions ====================
 
 def get_system_info():
     """Collect system information."""
@@ -72,47 +107,73 @@ def get_request_info():
     }
 
 
+# ==================== Request Hooks ====================
+
 @app.before_request
-def log_request():
-    """Log incoming request."""
+def before_request_hook():
+    """Track request start time and increment in-progress counter."""
+    http_requests_in_progress.inc()
+    g.start_time = time.time()  # Используй g вместо request
     logger.info(f"HTTP {request.method} {request.path} from {request.remote_addr}")
 
 
 @app.after_request
-def log_response(response):
-    """Log response after request."""
+def after_request_hook(response):
+    """Record request metrics."""
+    # Calculate duration
+    if hasattr(g, 'start_time'):
+        duration = time.time() - g.start_time
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=request.path
+        ).observe(duration)
+    
+    # Increment request counter
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.path,
+        status=response.status_code
+    ).inc()
+    
+    # Decrement in-progress counter
+    http_requests_in_progress.dec()
+    
     logger.info(f"Response: {response.status_code} for {request.method} {request.path}")
     return response
 
 
+# ==================== Routes ====================
+
 @app.route("/")
 def index():
     """Main endpoint - service and system information."""
-    uptime = get_uptime()
+    devops_info_endpoint_calls.labels(endpoint='/').inc()
+    
+    with system_info_collection_seconds.time():
+        uptime = get_uptime()
+        response = {
+            "service": {
+                "name": "devops-info-service",
+                "version": "1.0.0",
+                "description": "DevOps course info service",
+                "framework": "Flask",
+            },
+            "system": get_system_info(),
+            "runtime": {
+                "uptime_seconds": uptime["seconds"],
+                "uptime_human": uptime["human"],
+                "current_time": datetime.now(timezone.utc).isoformat().replace("+00:00", "") + "Z",
+                "timezone": "UTC",
+            },
+            "request": get_request_info(),
+            "endpoints": [
+                {"path": "/", "method": "GET", "description": "Service information"},
+                {"path": "/health", "method": "GET", "description": "Health check"},
+                {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
+            ],
+        }
 
-    response = {
-        "service": {
-            "name": "devops-info-service",
-            "version": "1.0.0",
-            "description": "DevOps course info service",
-            "framework": "Flask",
-        },
-        "system": get_system_info(),
-        "runtime": {
-            "uptime_seconds": uptime["seconds"],
-            "uptime_human": uptime["human"],
-            "current_time": datetime.now(timezone.utc).isoformat().replace("+00:00", "")
-            + "Z",
-            "timezone": "UTC",
-        },
-        "request": get_request_info(),
-        "endpoints": [
-            {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"},
-        ],
-    }
-
-    logger.info(f"Serving main endpoint with system info")
+    logger.info("Serving main endpoint with system info")
     return jsonify(response), 200
 
 
@@ -130,6 +191,12 @@ def health():
     return jsonify(response), 200
 
 
+@app.route("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
@@ -139,7 +206,7 @@ def not_found(error):
             {
                 "error": "Not Found",
                 "message": "The requested endpoint does not exist",
-                "available_endpoints": ["/", "/health"],
+                "available_endpoints": ["/", "/health", "/metrics"],
             }
         ),
         404,
