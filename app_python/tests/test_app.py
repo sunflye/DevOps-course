@@ -82,12 +82,13 @@ class TestMainEndpoint:
         
         assert 'endpoints' in data
         assert isinstance(data['endpoints'], list)
-        assert len(data['endpoints']) == 2
+        assert len(data['endpoints']) == 3
         
         # Verify endpoints structure
         paths = [ep['path'] for ep in data['endpoints']]
         assert '/' in paths
         assert '/health' in paths
+        assert '/metrics' in paths
 
 
 class TestHealthEndpoint:
