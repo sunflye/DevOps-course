@@ -1,12 +1,8 @@
-"""
-DevOps Info Service
-Main application module
-"""
-
 import os
 import socket
 import platform
 import logging
+import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
@@ -18,11 +14,32 @@ PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 START_TIME = datetime.now(timezone.utc)
 
-# Logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# JSON Logging Configuration
+class JSONFormatter(logging.Formatter):
+    """Custom formatter that outputs JSON logs."""
+    
+    def format(self, record):
+        """Format log record as JSON."""
+        log_data = {
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "") + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        
+        # Add exception info if present
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+        
+        return json.dumps(log_data)
+
+# Setup JSON logging
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
 logger = logging.getLogger(__name__)
+logger.handlers.clear()
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def get_system_info():
@@ -55,6 +72,19 @@ def get_request_info():
     }
 
 
+@app.before_request
+def log_request():
+    """Log incoming request."""
+    logger.info(f"HTTP {request.method} {request.path} from {request.remote_addr}")
+
+
+@app.after_request
+def log_response(response):
+    """Log response after request."""
+    logger.info(f"Response: {response.status_code} for {request.method} {request.path}")
+    return response
+
+
 @app.route("/")
 def index():
     """Main endpoint - service and system information."""
@@ -82,7 +112,7 @@ def index():
         ],
     }
 
-    logger.info(f"Request: {request.method} {request.path}")
+    logger.info(f"Serving main endpoint with system info")
     return jsonify(response), 200
 
 
@@ -103,7 +133,7 @@ def health():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
-    logger.warning(f"Not found: {request.method} {request.path}")
+    logger.warning(f"404 Not found: {request.method} {request.path}")
     return (
         jsonify(
             {
@@ -119,7 +149,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f"Internal server error: {str(error)}")
+    logger.error(f"500 Internal server error: {str(error)}")
     return (
         jsonify(
             {
