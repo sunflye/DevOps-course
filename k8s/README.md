@@ -542,11 +542,21 @@ Why:
 
 ## 6) Challenges & Solutions
 
-### 1. NodePort/minikube access issue on Windows
-Issue:
-- Direct `minikube service --url` used ssh tunnel and local setup lacked ssh binary.
+### 1) Service access in local environment
+**Issue encountered:** Direct NodePort access was unstable in local Windows/minikube setup.  
+**How I debugged:** Checked service/pods (`kubectl get svc,pods -o wide`), deployment details (`kubectl describe deployment app-python`), and app logs (`kubectl logs <pod>`).  
+**Solution:** Used `kubectl port-forward service/app-python-service 8080:80` and validated with curl.  
+**What I learned about Kubernetes:** Service connectivity depends on selectors/endpoints, and `port-forward` is the fastest way to verify app availability locally.
 
-Solution:
-- Used `kubectl port-forward service/app-python-service 8080:80`.
-- Verified endpoints via `curl http://localhost:8080/...`.
+### 2) Rolling update and rollback verification
+**Issue encountered:** During update, old and new Pods existed at the same time, and it was unclear if rollback really worked.  
+**How I debugged:** Used rollout/status/history/events commands:  
+- `kubectl rollout status deployment/app-python`  
+- `kubectl rollout history deployment/app-python`  
+- `kubectl get pods -w`  
+- `kubectl describe deployment app-python` (Events section)  
+**Solution:** Confirmed gradual replacement (RollingUpdate), then executed `kubectl rollout undo deployment/app-python` and verified previous ReplicaSet restored.  
+**What I learned about Kubernetes:** Rolling updates are controller-driven and safe by design; rollback is revision-based and easy to prove via history + pod state.
 
+### Overall learning
+Kubernetes works best with a declarative approach: define desired state in manifests, then validate behavior using `describe`, `events`, `logs`, and rollout commands.
