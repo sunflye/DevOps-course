@@ -340,10 +340,27 @@ curl http://localhost:8080/
 curl http://localhost:8080/health
 curl http://localhost:8080/metrics
 ```
+```
+Polina@MagicBookX16 MINGW64 /d/INNOPOLIS/DEVOPS ENGINEERING/DevOps-course (lab9)
+$ curl http://localhost:8080/
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"},{"description":"Prometheus metrics","method":"GET","path":"/metrics"}],"request":{"client_ip":"127.0.0.1","method":"GET","path":"/","user_agent":"curl/8.14.1"},"runtime":{"current_time":"2026-03-19T16:21:04.969216Z","timezone":"UTC","uptime_human":"0 hour, 10 minutes","uptime_seconds":602},"service":{"description":"DevOps course info service","framework":"Flask","name":"devops-info-service","version":"1.0.0"},"system":{"architecture":"x86_64","cpu_count":16,"hostname":"app-python-5cf7ff9485-dblgh","platform":"Linux","platform_version":"Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41","python_version":"3.13.12"}}
+
+Polina@MagicBookX16 MINGW64 /d/INNOPOLIS/DEVOPS ENGINEERING/DevOps-course (lab9)
+$ curl http://localhost:8080/health
+{"status":"healthy","timestamp":"2026-03-19T16:21:07.812364Z","uptime_seconds":607}
+
+Polina@MagicBookX16 MINGW64 /d/INNOPOLIS/DEVOPS ENGINEERING/DevOps-course (lab9)
+$ curl http://localhost:8080/metrics
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 3239.0
+python_gc_objects_collected_total{generation="1"} 0.0
+python_gc_objects_collected_total{generation="2"} 0.0
+```
 
 ### Scaling demonstration (Task 4)
 
-To scale the application, I updated `replicas` in [`k8s/deployment.yml`](k8s/deployment.yml) to `5` and applied the manifest.
+To scale the application, I updated `replicas` in `k8s/deployment.yml` to `5` and applied the manifest.
 
 ```powershell
 kubectl apply -f k8s/deployment.yml
@@ -373,7 +390,7 @@ app-python-5cf7ff9485-q84gx   1/1     Running   2 (21m ago)   4h22m
 
 ### Rolling update demonstration
 
-For rolling update testing, I changed deployment configuration (example: `DEMO_VAR: "v2"` in [`k8s/deployment.yml`](k8s/deployment.yml)) and reapplied the manifest.
+For rolling update testing, I changed deployment configuration (example: `DEMO_VAR: "v2"` in `k8s/deployment.yml`) and reapplied the manifest.
 
 ```powershell
 kubectl apply -f k8s/deployment.yml
