@@ -356,6 +356,7 @@ $ curl http://localhost:8080/metrics
 python_gc_objects_collected_total{generation="0"} 3239.0
 python_gc_objects_collected_total{generation="1"} 0.0
 python_gc_objects_collected_total{generation="2"} 0.0
+...
 ```
 
 ### Scaling demonstration (Task 4)
@@ -384,7 +385,7 @@ app-python-5cf7ff9485-ntcvn   1/1     Running   0             4m39s
 app-python-5cf7ff9485-q84gx   1/1     Running   2 (21m ago)   4h22m
 ```
 
-✅ **Scaling successful:** Deployment reached `5/5` ready replicas.
+**Scaling successful:** Deployment reached `5/5` ready replicas.
 
 ---
 
@@ -438,7 +439,7 @@ app-python-8497b8686f-jjngs   1/1   Running   0   5m57s
 app-python-8497b8686f-pwwgh   1/1   Running   0   6m6s
 ```
 
-✅ **Rolling update successful:** old pods were replaced gradually, new pods became healthy, service stayed available (zero-downtime rolling strategy).
+**Rolling update successful:** old pods were replaced gradually, new pods became healthy, service stayed available (zero-downtime rolling strategy).
 
 ---
 
@@ -481,7 +482,7 @@ app-python-5cf7ff9485-qrct2   1/1     Running   0          28s
 app-python-5cf7ff9485-sdgpl   1/1     Running   0          57s
 ```
 
-✅ **Rollback successful:** deployment returned to previous ReplicaSet revision and all replicas are healthy.
+**Rollback successful:** deployment returned to previous ReplicaSet revision and all replicas are healthy.
 ## 5) Production Considerations
 
 ### Health checks implemented and why
