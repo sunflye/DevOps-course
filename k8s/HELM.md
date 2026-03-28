@@ -599,14 +599,14 @@ These steps demonstrate:
 
 **Structure:**
 
-- [`k8s/app-python/Chart.yaml`](k8s/app-python/Chart.yaml)  
+- `k8s/app-python/Chart.yaml`
   - Defines chart metadata:
     - `name: app-python`
     - `version: 0.1.0`
     - `appVersion: "1.0.0"`
     - `type: application`
 
-- [`k8s/app-python/values.yaml`](k8s/app-python/values.yaml)  
+- `k8s/app-python/values.yaml`  
   - Default configuration:
     - `replicaCount`
     - `image.repository`, `image.tag`, `image.pullPolicy`
@@ -615,24 +615,24 @@ These steps demonstrate:
     - `livenessProbe` / `readinessProbe` timing and paths
     - basic `env` values (e.g. `PORT`)
 
-- Templates in [`k8s/app-python/templates/`](k8s/app-python/templates/):
-  - [`deployment.yaml`](k8s/app-python/templates/deployment.yaml)  
+- Templates in `k8s/app-python/templates/`:
+  - `deployment.yaml`  
     Templated `Deployment`:
     - replicas from `.Values.replicaCount`
     - image from `.Values.image`
     - resources from `.Values.resources`
     - health checks from `.Values.livenessProbe` / `.Values.readinessProbe`
     - `RollingUpdate` strategy (`maxUnavailable: 0`, `maxSurge: 1`)
-  - [`service.yaml`](k8s/app-python/templates/service.yaml)  
+  - `service.yaml`
     Templated `Service`:
     - `spec.type` and ports from `.Values.service`
     - `nodePort` only when `service.type == "NodePort"`
-  - [`_helpers.tpl`](k8s/app-python/templates/_helpers.tpl)  
+  - `_helpers.tpl`  
     Helper templates:
     - `app-python.fullname`
     - `app-python.labels`
     - `app-python.selectorLabels`
-  - Hooks in [`templates/hooks/`](k8s/app-python/templates/hooks/):
+  - Hooks in `templates/hooks/`:
     - `pre-install-job.yaml` — pre-install Job hook
     - `post-install-job.yaml` — post-install Job hook
 
@@ -640,8 +640,8 @@ These steps demonstrate:
 
 - Base defaults in `values.yaml` are “sane production‑like defaults”.
 - Environment-specific overrides are kept in:
-  - [`values-dev.yaml`](k8s/app-python/values-dev.yaml)
-  - [`values-prod.yaml`](k8s/app-python/values-prod.yaml)
+  - `values-dev.yaml`
+  - `values-prod.yaml`
 - All tunable settings (replicas, resources, probes, service type/ports, image tag) are driven by values, not hardcoded in templates.
 
 ---
@@ -660,12 +660,12 @@ These steps demonstrate:
 
 **Customizing for different environments:**
 
-- **Development:** override with [`values-dev.yaml`](k8s/app-python/values-dev.yaml)
+- **Development:** override with `values-dev.yaml`
   - `replicaCount: 1`
   - `service.type: NodePort`
   - relaxed resources and faster probes.
 
-- **Production:** override with [`values-prod.yaml`](k8s/app-python/values-prod.yaml)
+- **Production:** override with `values-prod.yaml`
   - `replicaCount: 5`
   - `service.type: LoadBalancer`
   - stronger resources and more conservative probe timings.
@@ -684,9 +684,9 @@ helm upgrade app-python k8s\app-python -f k8s\app-python\values-prod.yaml
 
 ### 3. Hook Implementation
 
-I implemented two Helm hooks as Kubernetes Jobs in [`k8s/app-python/templates/hooks`](k8s/app-python/templates/hooks):
+I implemented two Helm hooks as Kubernetes Jobs in `k8s/app-python/templates/hooks`:
 
-1. **Pre-install hook** — [`pre-install-job.yaml`](k8s/app-python/templates/hooks/pre-install-job.yaml)
+1. **Pre-install hook** — `pre-install-job.yaml`
    - Purpose: simulate pre-install tasks (e.g. migrations/validation) before resources are created.
    - Annotations:
      ```yaml
@@ -699,7 +699,7 @@ I implemented two Helm hooks as Kubernetes Jobs in [`k8s/app-python/templates/ho
      - Lower weight (`-5`) ensures it runs before other pre-install hooks (if any).
      - On success, the Job is deleted automatically (`hook-succeeded`).
 
-2. **Post-install hook** — [`post-install-job.yaml`](k8s/app-python/templates/hooks/post-install-job.yaml)
+2. **Post-install hook** — `post-install-job.yaml`
    - Purpose: simulate post-install smoke tests/notifications after the app is deployed.
    - Annotations:
      ```yaml
