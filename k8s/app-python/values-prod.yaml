@@ -1,0 +1,24 @@
+replicaCount: 5
+
+image:
+  # prod should use a fixed tag; if у тебя есть конкретный тег, впиши его
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 3
