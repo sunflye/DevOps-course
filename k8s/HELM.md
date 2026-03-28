@@ -824,8 +824,6 @@ app-python   default     1         deployed  app-python-0.1.0   1.0.0
 
   This matches the `hook-succeeded` deletion policy (Jobs removed after success).
 
-> Note: if needed for grading, you can still capture and include `kubectl describe job <pre/post-install-job-name>` and `kubectl logs job/<name>` output; currently only the deletion behavior (`kubectl get jobs`) is documented.
-
 ---
 
 ### 5. Operations
