@@ -1,0 +1,42 @@
+replicaCount: 3
+
+image:
+  repository: sunflye/devops-info-service
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+readinessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 3
+
+# Можно позже вынести сюда ENV, если нужно
+env:
+  port: "5000"
+
+httpRoute:
+  enabled: false
+
+ingress:
+  enabled: false
