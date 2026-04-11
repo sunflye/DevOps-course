@@ -4,7 +4,7 @@
 
 ### 1.1 Visit Counter Implementation
 
-The Python application in `app_python/app.p` was extended to track visits using a file-based counter stored on disk at `/data/visits`.
+The Python application in `app_python/app.py` was extended to track visits using a file-based counter stored on disk at `/data/visits`.
 
 Key implementation details:
 
