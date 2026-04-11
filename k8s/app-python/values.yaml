@@ -31,7 +31,6 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 3
 
-# Можно позже вынести сюда ENV, если нужно
 env:
   port: "5000"
 
@@ -40,3 +39,12 @@ httpRoute:
 
 ingress:
   enabled: false
+
+secret:
+  username: "placeholder-user"
+  password: "placeholder-pass"
+
+vault:
+  enabled: true
+  role: "app-python"
+  secretPath: "secret/data/app-python/config"
