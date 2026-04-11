@@ -149,3 +149,132 @@ See workflow status badge above for latest test results.
 ## CI/CD Status
 
 [![Python CI/CD](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/sunflye/DevOps-course/actions/workflows/python-ci.yml)
+
+
+## Visit Counter (Lab 12 — Task 1: Application Persistence Upgrade)
+
+The application tracks visit counts in a persistent file (`/data/visits`). The counter:
+- Increments on each `GET /` request
+- Persists across container restarts
+- Can be read via `GET /visits` endpoint
+- Uses thread-safe file locking (`threading.Lock`) to prevent race conditions
+
+### Implementation Pattern
+
+```
+Request to / → Read counter from file → Increment → Write back → Return response
+Request to /visits → Read counter from file → Return count
+```
+
+### Counter Functions
+
+```python
+def read_visits():
+    """Read visits count from file."""
+    try:
+        if os.path.exists(VISITS_FILE):
+            with open(VISITS_FILE, 'r') as f:
+                return int(f.read().strip())
+    except (IOError, ValueError):
+        pass
+    return 0
+
+def write_visits(count):
+    """Write visits count to file."""
+    with open(VISITS_FILE, 'w') as f:
+        f.write(str(count))
+
+def increment_visits():
+    """Safely increment visits counter."""
+    with visits_lock:
+        count = read_visits()
+        count += 1
+        write_visits(count)
+        return count
+```
+
+### Testing Persistence
+
+```powershell
+# 1. Start container
+docker-compose up -d
+
+# 2. Make requests (each increments counter)
+curl http://localhost:5000/
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+
+# Output: {"visits":2,"timestamp":"2026-04-11T19:40:40.821933+00:00Z"}
+
+# 3. Check file on host
+cat data/visits
+# Output: 2
+
+# 4. Stop container
+docker-compose stop
+
+# 5. Verify file persisted (not deleted!)
+cat data/visits
+# Output: 2
+
+# 6. Restart container
+docker-compose up -d
+Start-Sleep -Seconds 3
+
+# 7. Counter should NOT reset
+curl http://localhost:5000/visits
+# Output: {"visits":2,...}
+
+# 8. Make new request
+curl http://localhost:5000/
+
+# 9. Counter continues from 2 → 3
+curl http://localhost:5000/visits
+# Output: {"visits":3,...}
+
+cat data/visits
+# Output: 3
+```
+
+### Docker Compose Volume Mount
+
+```yaml
+# docker-compose.yml
+volumes:
+  - ./data:/data
+```
+
+**Configuration:**
+- `./data` — host directory (persists after container stops)
+- `/data` — container directory (where app writes visits file)
+
+**Benefits:**
+- ✅ Data persists on host after container stops
+- ✅ Easy access to files from host machine
+- ✅ Volume survives container restarts
+- ✅ Multiple containers can share data
+
+### Thread Safety
+
+Uses `threading.Lock()` to ensure atomic operations when multiple requests arrive simultaneously:
+
+```python
+visits_lock = threading.Lock()
+
+def increment_visits():
+    with visits_lock:  # Prevents race conditions
+        count = read_visits()
+        count += 1
+        write_visits(count)
+        return count
+```
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Service information (increments visit counter) |
+| `/visits` | GET | Returns current visit count with timestamp |
+| `/health` | GET | Health check |
+| `/metrics` | GET | Prometheus metrics |
+| `/ready` | GET | Readiness check |

@@ -48,3 +48,13 @@ vault:
   enabled: true
   role: "app-python"
   secretPath: "secret/data/app-python/config"
+
+configmap:
+  environment: "production"
+  logLevel: "INFO"
+  cacheTTL: "3600"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
