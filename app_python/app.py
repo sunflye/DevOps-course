@@ -16,7 +16,13 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-DATA_DIR = os.getenv("DATA_DIR", "/data")
+
+# ✅ базовый каталог рядом с app.py
+BASE_DIR = Path(__file__).resolve().parent
+# ✅ по умолчанию пишем в локальную папку app_python/data
+# в Docker/K8s переопределяется через DATA_DIR=/data
+DATA_DIR = os.getenv("DATA_DIR", str(BASE_DIR / "data"))
+
 START_TIME = datetime.now(timezone.utc)
 
 # Ensure data directory exists
