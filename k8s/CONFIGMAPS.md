@@ -317,7 +317,7 @@ These outputs confirm that:
 
 ### 3.1 PVC Configuration
 
-The PVC template lives in `k8s/app-python/templates/pvc.yaml:
+The PVC template lives in `k8s/app-python/templates/pvc.yaml`:
 
 ```yaml
 {{- if .Values.persistence.enabled }}
@@ -459,7 +459,7 @@ drwxr-xr-x 1 root root 4096 Apr 11 20:26 ..
 ```powershell
 (venv) PS> D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> # Save counter value
 (venv) PS> D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> $COUNT_BEFORE = kubectl exec -it $POD_NAME -c app-python -- cat /data/visits
-(venv) PS> D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course>Write-Host "Count BEFORE deletion: $COUNT_BEFORE"
+(venv) PS> D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> Write-Host "Count BEFORE deletion: $COUNT_BEFORE"
 Count BEFORE deletion: 3
 
 (venv) PS> D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> # Delete the pod
