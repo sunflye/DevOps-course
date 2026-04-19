@@ -58,3 +58,6 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "false"
