@@ -2,7 +2,7 @@ replicaCount: 5
 
 image:
   repository: sunflye/devops-info-service
-  tag: "latest"
+  tag: "v1.1.0"
   pullPolicy: IfNotPresent
 
 service:
