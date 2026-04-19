@@ -5,7 +5,8 @@ image:
   tag: "latest"
 
 service:
-  type: LoadBalancer
+  type: NodePort
+  nodePort: 30082
 
 resources:
   requests:

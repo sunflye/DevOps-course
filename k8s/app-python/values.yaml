@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 5
 
 image:
   repository: sunflye/devops-info-service
@@ -45,7 +45,7 @@ secret:
   password: "placeholder-pass"
 
 vault:
-  enabled: true
+  enabled: false
   role: "app-python"
   secretPath: "secret/data/app-python/config"
 
