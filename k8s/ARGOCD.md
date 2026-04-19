@@ -249,3 +249,163 @@ spec:
 ![](../app_python/docs/screenshots/11-confirm.jpg)
 ![](../app_python/docs/screenshots/12-confirm.jpg)
 ---
+
+## Task 3 — Multi-Environment Deployment
+
+### Namespace Separation
+
+- Created two namespaces for isolated environments:
+  ```powershell
+  kubectl create namespace dev
+  kubectl create namespace prod
+  ```
+- This keeps dev and prod resources independent.
+
+### Dev vs Prod Configuration Differences
+
+- **Dev** uses [`k8s/app-python/values-dev.yaml`](k8s/app-python/values-dev.yaml):
+  - `replicaCount: 1`
+  - Lower CPU/Memory requests and limits
+  - Service type: `NodePort` (unique port)
+- **Prod** uses [`k8s/app-python/values-prod.yaml`](k8s/app-python/values-prod.yaml):
+  - `replicaCount: 5`
+  - Higher CPU/Memory requests and limits
+  - Service type: `NodePort` (unique port)
+
+### Sync Policy Differences and Rationale
+
+- **Dev** uses **auto-sync** with self-heal and prune:
+  ```yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  ```
+  **Rationale:** fast iteration, automatic drift correction.
+
+- **Prod** uses **manual sync**:
+  ```yaml
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+  ```
+  **Rationale:** controlled releases, change review, and safer production updates.
+
+### Verification
+
+```powershell
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods -n dev
+NAME                                        READY   STATUS    RESTARTS   AGE
+python-app-dev-app-python-b5949589b-g7w52   1/1     Running   0          25m
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> 
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods -n prod
+NAME                                          READY   STATUS    RESTARTS   AGE
+python-app-prod-app-python-5bf9d56575-4d78s   1/1     Running   0          24m
+python-app-prod-app-python-5bf9d56575-hvl42   1/1     Running   0          24m
+python-app-prod-app-python-5bf9d56575-np4mv   1/1     Running   0          24m
+python-app-prod-app-python-5bf9d56575-rvhm8   1/1     Running   0          24m
+python-app-prod-app-python-5bf9d56575-w45b9   1/1     Running   0          24m
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> 
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get svc -n dev
+NAME                        TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+python-app-dev-app-python   NodePort   10.102.104.150   <none>        80:30081/TCP   15m
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> 
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get svc -n prod
+NAME                         TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+python-app-prod-app-python   NodePort   10.104.251.217   <none>        80:30082/TCP   24m
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> 
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> argocd app list
+NAME                    CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                    
+      PATH            TARGET
+argocd/python-app       https://kubernetes.default.svc  default    default  Synced  Healthy  Manual      <none>      https://github.com/sunflye/DevOps-course.git  k8s/app-python  lab13
+argocd/python-app-dev   https://kubernetes.default.svc  dev        default  Synced  Healthy  Auto-Prune  <none>      https://github.com/sunflye/DevOps-course.git  k8s/app-python  lab13
+argocd/python-app-prod  https://kubernetes.default.svc  prod       default  Synced  Healthy  Manual      <none>      https://github.com/sunflye/DevOps-course.git  k8s/app-python  lab13
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> 
+```
+![](../app_python/docs/screenshots/13-confirm.png)
+![](../app_python/docs/screenshots/14-confirm.png)
+![](../app_python/docs/screenshots/15-confirm.png)
+
+
+## Task 4 — Self-Healing & Sync Policies
+
+### 4.1 Self-Healing Test (Dev)
+
+**Manual scale (drift):**
+```powershell
+kubectl scale deployment python-app-dev-app-python -n dev --replicas=5
+argocd app get python-app-dev
+kubectl get pods -n dev -w
+```
+
+**Observed:**
+- After manual scale, ArgoCD showed **OutOfSync**.
+![](../app_python/docs/screenshots/16-confirm.jpg)
+- Within ~3 minutes ArgoCD auto‑reverted replicas to `replicaCount: 1`.
+
+```
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods -n dev -w
+NAME                                        READY   STATUS        RESTARTS   AGE
+python-app-dev-app-python-b5949589b-g7w52   1/1     Running       0          30m    
+python-app-dev-app-python-b5949589b-h2krx   1/1     Terminating   0          49s    
+python-app-dev-app-python-b5949589b-kmthd   1/1     Terminating   0          49s    
+python-app-dev-app-python-b5949589b-rgk7c   1/1     Terminating   0          49s    
+python-app-dev-app-python-b5949589b-vp2hh   1/1     Terminating   0          49s
+```
+- Status returned to **Synced/Healthy**.
+![](../app_python/docs/screenshots/17-confirm.png)
+```
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods -n dev -w
+NAME                                        READY   STATUS    RESTARTS   AGE
+python-app-dev-app-python-b5949589b-g7w52   1/1     Running   0          31m 
+```
+---
+
+### 4.2 Pod Deletion (Kubernetes Self-Healing)
+
+```powershell
+$POD = kubectl get pods -n dev -o jsonpath="{.items[0].metadata.name}"
+kubectl delete pod $POD -n dev
+kubectl get pods -n dev -w
+```
+
+**Observed:**
+![](../app_python/docs/screenshots/18-confirm.jpg)
+- Kubernetes immediately recreated the deleted pod.
+```
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods -n dev -w        
+NAME                                        READY   STATUS        RESTARTS   AGE    
+python-app-dev-app-python-b5949589b-5vkk2   1/1     Running       0          21s    
+python-app-dev-app-python-b5949589b-h9glj   1/1     Terminating   0          73s  
+```
+![](../app_python/docs/screenshots/19-confirm.png)
+- This is **Kubernetes self‑healing**, not ArgoCD.
+
+---
+
+### 4.3 Configuration Drift Test
+
+```powershell
+kubectl label deployment python-app-dev-app-python -n dev drift=manual
+argocd app diff python-app-dev
+argocd app get python-app-dev
+```
+
+**Observed:**
+- The manual label caused drift, but ArgoCD auto‑heal removed it quickly.
+- `argocd app diff` showed no output because the drift was already reverted.
+- Status returned to **Synced/Healthy** (Git state restored).
+
+---
+
+### 4.4 Sync Behavior Summary
+
+- **ArgoCD syncs** when Git changes or when it detects drift (auto‑sync enabled in dev).
+- **Kubernetes heals** only pod failures (recreates pods); it does **not** fix config drift.
+- Default ArgoCD reconciliation interval is ~**3 minutes**, so auto‑heal happens within a few minutes.
