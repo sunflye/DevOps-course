@@ -45,7 +45,7 @@ secret:
   password: "placeholder-pass"
 
 vault:
-  enabled: false
+  enabled: true
   role: "app-python"
   secretPath: "secret/data/app-python/config"
 
@@ -58,6 +58,3 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
-
-podAnnotations:
-  vault.hashicorp.com/agent-inject: "false"
