@@ -376,6 +376,7 @@ kubectl get pods -n dev -w
 ```
 
 **Observed:**
+
 ![](../app_python/docs/screenshots/18-confirm.jpg)
 - Kubernetes immediately recreated the deleted pod.
 ```
@@ -392,9 +393,46 @@ python-app-dev-app-python-b5949589b-h9glj   1/1     Terminating   0          73s
 ### 4.3 Configuration Drift Test
 
 ```powershell
-kubectl label deployment python-app-dev-app-python -n dev drift=manual
-argocd app diff python-app-dev
-argocd app get python-app-dev
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl label deployment python-app-dev-app-python -n dev drift=manual
+deployment.apps/python-app-dev-app-python labeled
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> argocd app diff python-app-dev
+
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> argocd app get python-app-dev
+Name:               argocd/python-app-dev
+Project:            default
+Server:             https://kubernetes.default.svc
+Namespace:          dev
+URL:                https://argocd.example.com/applications/python-app-dev
+Source:
+- Repo:             https://github.com/sunflye/DevOps-course.git
+  Target:           lab13
+  Path:             k8s/app-python
+  Helm Values:      values-dev.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13 (497ed4f)
+Health Status:      Healthy
+
+GROUP  KIND                   NAMESPACE  NAME                                    STATUS     HEALTH   HOOK      MESSAGE
+batch  Job                    dev        python-app-dev-app-python-pre-install   Succeeded           PreSync   job.batch/python-app-dev-app-python-pre-install created
+       Secret                 dev        python-app-dev-app-python-secret        Synced                   
+     secret/python-app-dev-app-python-secret configured
+       ConfigMap              dev        python-app-dev-app-python-env           Synced                   
+     configmap/python-app-dev-app-python-env unchanged
+       ConfigMap              dev        python-app-dev-app-python-config        Synced                   
+     configmap/python-app-dev-app-python-config unchanged
+       PersistentVolumeClaim  dev        python-app-dev-app-python-data          Synced     Healthy            persistentvolumeclaim/python-app-dev-app-python-data unchanged
+       Service                dev        python-app-dev-app-python               Synced     Healthy            service/python-app-dev-app-python unchanged
+     configmap/python-app-dev-app-python-env unchanged
+       ConfigMap              dev        python-app-dev-app-python-config        Synced                        configmap/python-app-dev-app-python-config unchanged
+       PersistentVolumeClaim  dev        python-app-dev-app-python-data          Synced     Healthy            persistentvolumeclaim/python-app-dev-app-python-data unchanged
+       Service                dev        python-app-dev-app-python               Synced     Healthy            service/python-app-dev-app-python unchanged
+       PersistentVolumeClaim  dev        python-app-dev-app-python-data          Synced     Healthy            persistentvolumeclaim/python-app-dev-app-python-data unchanged
+       Service                dev        python-app-dev-app-python               Synced     Healthy            service/python-app-dev-app-python unchanged
+       Service                dev        python-app-dev-app-python               Synced     Healthy            service/python-app-dev-app-python unchanged
+apps   Deployment             dev        python-app-dev-app-python               Synced     Healthy            deployment.apps/python-app-dev-app-python configured
+batch  Job                    dev        python-app-dev-app-python-post-install  Succeeded           PostSync  job.batch/python-app-dev-app-python-post-install created
 ```
 
 **Observed:**
