@@ -2,7 +2,7 @@ replicaCount: 5
 
 image:
   repository: sunflye/devops-info-service
-  tag: "2026.04.04"
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 service:

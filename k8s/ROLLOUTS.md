@@ -232,3 +232,121 @@ NAME                                           KIND        STATUS        AGE    
 
 The status `Degraded` with the message `RolloutAborted` confirms that the controller stopped the progression and ensured that the stable production environment (Revision 5) remained available with 100% traffic weight.
 ![](../app_python/docs/screenshots/23.png)
+
+## Task 3 — Blue-Green Deployment
+
+### 1. Strategy Configuration
+
+I reconfigured the rollout strategy from `canary` to `blueGreen` in the Helm chart. This strategy uses two distinct services to manage traffic:
+
+- **Active Service ([`app-python-canary`](#))**: Points to the current stable (Blue) version used by production users.
+- **Preview Service ([`app-python-canary-preview`](#))**: Points to the new (Green) version, allowing for manual verification before the official cutover.
+
+```yaml
+  strategy:
+    blueGreen:
+      activeService: app-python-canary
+      previewService: app-python-canary-preview
+      autoPromotionEnabled: false  # Requires manual promotion for safety
+```
+
+### 2. Blue-Green Workflow & Promotion Process
+
+1. **Initial State (Blue)**: The application was running Revision 7 as the stable version.
+2. **Triggering Update (Green)**: I updated the image tag to `latest`, which triggered the creation of a new ReplicaSet (Revision 8).
+3. **Verification**: While the `activeService` was still serving Revision 7 to users, I used the `previewService` via port-forwarding to verify Revision 8:
+   ```powershell
+   kubectl port-forward svc/app-python-canary-preview 8081:80
+   # Verified new features/stability at http://localhost:8081
+   ```
+![](../app_python/docs/screenshots/24.jpg)
+4. **Promotion**: Once verified, I promoted the new version to Active:
+   ```powershell
+   kubectl argo rollouts promote app-python-canary -n default
+   ```
+
+**Terminal Output during Promotion:**
+```powershell
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl argo rollouts get rollout app-python-canary -n default
+Name:            app-python-canary
+Namespace:       default
+Status:          ✔ Healthy
+Strategy:        BlueGreen
+Images:          sunflye/devops-info-service:latest (active)
+Replicas:
+  Desired:       5
+  Current:       5
+  Updated:       5
+  Ready:         5
+  Available:     5
+
+NAME                                           KIND        STATUS        AGE    INFO
+⟳ app-python-canary                            Rollout     ✔ Healthy     1h     
+├──# revision:8
+│  └──⧉ app-python-canary-5bf967d8f4           ReplicaSet  ✔ Healthy     5m     active
+│     ├──□ app-python-canary-5bf967d8f4-b2k8s  Pod         ✔ Running     5m     ready:1/1
+│     ├──□ app-python-canary-5bf967d8f4-m9xzn  Pod         ✔ Running     4m     ready:1/1
+│     ├──□ app-python-canary-5bf967d8f4-p0lzq  Pod         ✔ Running     4m     ready:1/1
+│     ├──□ app-python-canary-5bf967d8f4-v7xbc  Pod         ✔ Running     3m     ready:1/1
+│     └──□ app-python-canary-5bf967d8f4-z4wfq  Pod         ✔ Running     3m     ready:1/1
+└──# revision:7
+   └──⧉ app-python-canary-7b6b84dd67           ReplicaSet  • ScaledDown  25m    
+```
+
+### 3. Instant Rollback Test
+
+I tested the rollback capability by undoing the promotion:
+```powershell
+kubectl argo rollouts undo app-python-canary -n default
+```
+
+**Observation on Speed Difference:**
+- **Canary:** Rollback involves gradually scaling down the canary and scaling up the stable pods, which takes time based on the steps.
+- **Blue-Green:** The rollback is nearly **instantaneous**. Since the old ReplicaSet (Blue) is still available, the controller simply updates the `activeService` selector to point back to the old pods.
+- **Conclusion:** Blue-Green is significantly faster for rollbacks and safer for "all-or-nothing" deployments, though it requires more cluster resources (2x) during the transition.
+
+---
+
+
+## Task 4 — Strategy Comparison & Operations
+
+### 1. Strategy Comparison
+
+| Feature | 🐤 Canary | 🔵 Blue-Green |
+|:---|:---|:---|
+| **Traffic Shift** | Gradual (20% → 40% → ... → 100%) | Instant (0% → 100%) |
+| **Risk Exposure** | Minimal (only a small % see new version) | Full (all users switch at once) |
+| **Rollback Speed** | Slow (gradual scale down/up) | **Instant** (switch service selector) |
+| **Resource Usage** | Low (shared pod capacity) | **High** (requires 2x full replicas) |
+| **Complexity** | Higher (traffic splitting required) | Lower (simple service switch) |
+
+#### Recommendation:
+- **Use Canary when:** You want to test stability on real users with minimal "blast radius", or when you lack resources to run two full clusters.
+- **Use Blue-Green when:** You need an instant cutover (e.g., breaking API changes) or when even 5% of errors for users is unacceptable during testing (verification happens in isolation via Preview service).
+
+---
+
+### 2. CLI Commands Reference
+
+During this lab, I used the following `kubectl argo rollouts` commands for managing progressive delivery:
+
+#### Monitoring
+- `kubectl argo rollouts list rollouts -n default` — List all managed rollouts.
+- `kubectl argo rollouts get rollout <name> -w` — Real-time watch of rollout steps and pod status.
+- `kubectl argo rollouts dashboard` — Launch the web UI (default: http://localhost:3100).
+
+#### Promotion & Control
+- `kubectl argo rollouts promote <name>` — Manually move to the next step or promote Preview to Active.
+- `kubectl argo rollouts pause <name>` — Pause a running rollout.
+- `kubectl argo rollouts resume <name>` — Resume a paused rollout.
+
+#### Troubleshooting & Recovery
+- `kubectl argo rollouts abort <name>` — Stop a rollout and return to the stable version.
+- `kubectl argo rollouts undo <name>` — Rollback to the previous successful revision.
+- `kubectl argo rollouts retry rollout <name>` — Retry a rollout that has entered a Degraded/Aborted state.
+- `kubectl logs -l rollouts-pod-template-hash=<hash>` — View logs from a specific rollout revision.
+
+---
+
+## Conclusion
+Progressive delivery with Argo Rollouts significantly improves deployment safety. While **Canary** is great for observing application behavior under partial load, **Blue-Green** provides the most reliable and fastest rollback mechanism for critical production services.
