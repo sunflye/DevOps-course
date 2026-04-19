@@ -30,15 +30,34 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.targetPort }}
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          
+          # ConfigMap as Environment Variables
+          envFrom:
+            - configMapRef:
+                name: {{ include "app-python.fullname" . }}-env
+            - secretRef:
+                name: {{ include "app-python.fullname" . }}-secret
+          
+          # Pod-specific environment variables
           env:
             - name: PORT
               value: {{ .Values.env.port | quote }}
-          envFrom:
-            - secretRef:
-                name: {{ include "app-python.fullname" . }}-secret
+            - name: DATA_DIR
+              value: "/data"
+          
+          # ConfigMap and PVC Volume Mounts
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
+          
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
@@ -47,6 +66,7 @@ spec:
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           {{- end }}
+          
           {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -55,3 +75,12 @@ spec:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           {{- end }}
+      
+      # Volumes
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "app-python.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "app-python.fullname" . }}-data

@@ -4,34 +4,66 @@ import platform
 import logging
 import json
 import time
+import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from flask import Flask, jsonify, request, Response, g
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 
-# Configuration
+# ==================== Configuration ====================
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+# ✅ базовый каталог рядом с app.py
+BASE_DIR = Path(__file__).resolve().parent
+# ✅ по умолчанию пишем в локальную папку app_python/data
+# в Docker/K8s переопределяется через DATA_DIR=/data
+DATA_DIR = os.getenv("DATA_DIR", str(BASE_DIR / "data"))
+
 START_TIME = datetime.now(timezone.utc)
+
+# Ensure data directory exists
+Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+VISITS_FILE = os.path.join(DATA_DIR, "visits")
+visits_lock = threading.Lock()
+
+# ==================== Visits Counter ====================
+def read_visits():
+    """Read visits count from file."""
+    try:
+        if os.path.exists(VISITS_FILE):
+            with open(VISITS_FILE, 'r') as f:
+                return int(f.read().strip())
+    except (IOError, ValueError):
+        pass
+    return 0
+
+def write_visits(count):
+    """Write visits count to file."""
+    with open(VISITS_FILE, 'w') as f:
+        f.write(str(count))
+
+def increment_visits():
+    """Safely increment visits counter."""
+    with visits_lock:
+        count = read_visits()
+        count += 1
+        write_visits(count)
+        return count
 
 # ==================== JSON Logging ====================
 class JSONFormatter(logging.Formatter):
     """Custom formatter that outputs JSON logs."""
-    
     def format(self, record):
-        """Format log record as JSON."""
         log_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "") + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "level": record.levelname,
-            "logger": record.name,
             "message": record.getMessage(),
+            "module": record.module,
         }
-        
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-        
         return json.dumps(log_data)
 
 handler = logging.StreamHandler()
@@ -52,101 +84,94 @@ http_requests_total = Counter(
 
 http_request_duration_seconds = Histogram(
     'http_request_duration_seconds',
-    'HTTP request duration in seconds',
-    ['method', 'endpoint'],
-    buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 5.0]
+    'HTTP request duration',
+    ['method', 'endpoint']
 )
 
 http_requests_in_progress = Gauge(
     'http_requests_in_progress',
-    'HTTP requests currently being processed'
+    'HTTP requests currently being processed',
+    ['method', 'endpoint']
 )
 
-# Application-Specific Metrics
+# Application-specific metrics
 devops_info_endpoint_calls = Counter(
     'devops_info_endpoint_calls',
-    'Devops info endpoint calls',
+    'Endpoint calls',
     ['endpoint']
 )
 
 system_info_collection_seconds = Histogram(
     'devops_info_system_collection_seconds',
-    'System info collection time',
-    buckets=[0.01, 0.05, 0.1, 0.5]
+    'System info collection time'
 )
 
 # ==================== Helper Functions ====================
-
 def get_system_info():
     """Collect system information."""
     return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.platform(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
+        'hostname': socket.gethostname(),
+        'platform': platform.system(),
+        'architecture': platform.machine(),
+        'python_version': platform.python_version(),
+        'cpu_count': os.cpu_count() or 1,
     }
-
 
 def get_uptime():
-    """Calculate application uptime."""
-    uptime = (datetime.now(timezone.utc) - START_TIME).total_seconds()
-    hours = int(uptime // 3600)
-    minutes = int((uptime % 3600) // 60)
-    return {"seconds": int(uptime), "human": f"{hours} hour, {minutes} minutes"}
-
-
-def get_request_info():
-    """Collect request information."""
+    """Calculate uptime."""
+    uptime_seconds = int((datetime.now(timezone.utc) - START_TIME).total_seconds())
+    hours = uptime_seconds // 3600
+    minutes = (uptime_seconds % 3600) // 60
     return {
-        "client_ip": request.remote_addr,
-        "user_agent": request.headers.get("User-Agent", "Unknown"),
-        "method": request.method,
-        "path": request.path,
+        'seconds': uptime_seconds,
+        'human': f"{hours} hour, {minutes} minutes"
     }
 
+def get_request_info():
+    """Get request information."""
+    return {
+        'method': request.method,
+        'path': request.path,
+        'user_agent': request.headers.get('User-Agent', 'unknown'),
+        'client_ip': request.remote_addr,
+    }
 
-# ==================== Request Hooks ====================
-
+# ==================== Middleware ====================
 @app.before_request
-def before_request_hook():
-    """Track request start time and increment in-progress counter."""
-    http_requests_in_progress.inc()
-    g.start_time = time.time()  # Используй g вместо request
-    logger.info(f"HTTP {request.method} {request.path} from {request.remote_addr}")
-
+def before_request():
+    """Track request start time and increment in-progress gauge."""
+    g.start_time = time.time()
+    method = request.method
+    endpoint = request.path or '/'
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
+    logger.info(f"Request started: {method} {endpoint}")
 
 @app.after_request
-def after_request_hook(response):
-    """Record request metrics."""
-    # Calculate duration
+def after_request(response):
+    """Track request duration and record metrics."""
+    method = request.method
+    endpoint = request.path or '/'
+    status = response.status_code
+    
+    # Record duration
     if hasattr(g, 'start_time'):
         duration = time.time() - g.start_time
-        http_request_duration_seconds.labels(
-            method=request.method,
-            endpoint=request.path
-        ).observe(duration)
+        http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
     
-    # Increment request counter
-    http_requests_total.labels(
-        method=request.method,
-        endpoint=request.path,
-        status=response.status_code
-    ).inc()
+    # Decrement in-progress gauge
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
     
-    # Decrement in-progress counter
-    http_requests_in_progress.dec()
+    # Record total requests
+    http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
     
-    logger.info(f"Response: {response.status_code} for {request.method} {request.path}")
+    logger.info(f"Request completed: {method} {endpoint} {status}")
     return response
 
-
 # ==================== Routes ====================
-
-@app.route("/")
+@app.route('/')
 def index():
-    """Main endpoint - service and system information."""
+    """Service information endpoint."""
+    increment_visits()
     devops_info_endpoint_calls.labels(endpoint='/').inc()
     
     with system_info_collection_seconds.time():
@@ -162,73 +187,62 @@ def index():
             "runtime": {
                 "uptime_seconds": uptime["seconds"],
                 "uptime_human": uptime["human"],
-                "current_time": datetime.now(timezone.utc).isoformat().replace("+00:00", "") + "Z",
+                "current_time": datetime.now(timezone.utc).isoformat() + "Z",
                 "timezone": "UTC",
             },
             "request": get_request_info(),
             "endpoints": [
                 {"path": "/", "method": "GET", "description": "Service information"},
                 {"path": "/health", "method": "GET", "description": "Health check"},
+                {"path": "/visits", "method": "GET", "description": "Visit count"},
                 {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
-            ],
+            ]
         }
+        return jsonify(response)
 
-    logger.info("Serving main endpoint with system info")
-    return jsonify(response), 200
+@app.route('/visits')
+def visits():
+    """Return current visit count."""
+    count = read_visits()
+    return jsonify({
+        'visits': count,
+        'timestamp': datetime.now(timezone.utc).isoformat() + "Z"
+    })
 
-
-@app.route("/health")
+@app.route('/health')
 def health():
     """Health check endpoint."""
+    devops_info_endpoint_calls.labels(endpoint='/health').inc()
     uptime = get_uptime()
-    response = {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "") + "Z",
-        "uptime_seconds": uptime["seconds"],
-    }
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now(timezone.utc).isoformat() + "Z",
+        'uptime_seconds': uptime['seconds']
+    })
 
-    logger.debug(f'Health check: {response["status"]}')
-    return jsonify(response), 200
-
-
-@app.route("/metrics")
+@app.route('/metrics')
 def metrics():
     """Prometheus metrics endpoint."""
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
+@app.route('/ready')
+def ready():
+    """Readiness check endpoint."""
+    return jsonify({'ready': True})
 
+# ==================== Error Handlers ====================
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
-    logger.warning(f"404 Not found: {request.method} {request.path}")
-    return (
-        jsonify(
-            {
-                "error": "Not Found",
-                "message": "The requested endpoint does not exist",
-                "available_endpoints": ["/", "/health", "/metrics"],
-            }
-        ),
-        404,
-    )
-
+    return jsonify({'error': 'Not found'}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f"500 Internal server error: {str(error)}")
-    return (
-        jsonify(
-            {
-                "error": "Internal Server Error",
-                "message": "An unexpected error occurred",
-            }
-        ),
-        500,
-    )
+    logger.error(f"Internal error: {error}")
+    return jsonify({'error': 'Internal server error'}), 500
 
-
-if __name__ == "__main__":
-    logger.info("Starting DevOps Info Service v1.0.0")
-    logger.info(f"Server running at http://{HOST}:{PORT}")
+# ==================== Main ====================
+if __name__ == '__main__':
+    logger.info(f"Starting application on {HOST}:{PORT}")
     app.run(host=HOST, port=PORT, debug=DEBUG)

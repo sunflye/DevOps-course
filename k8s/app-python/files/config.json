@@ -1,0 +1,18 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "version": "1.0.0",
+    "environment": "production",
+    "description": "DevOps course info service"
+  },
+  "features": {
+    "visits_tracking": true,
+    "metrics_enabled": true,
+    "debug_mode": false
+  },
+  "settings": {
+    "log_level": "INFO",
+    "cache_ttl": 3600,
+    "max_connections": 100
+  }
+}

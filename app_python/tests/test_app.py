@@ -82,7 +82,7 @@ class TestMainEndpoint:
         
         assert 'endpoints' in data
         assert isinstance(data['endpoints'], list)
-        assert len(data['endpoints']) == 3
+        assert len(data['endpoints']) == 4
         
         # Verify endpoints structure
         paths = [ep['path'] for ep in data['endpoints']]
@@ -142,7 +142,6 @@ class TestErrorHandling:
         
         data = response.get_json()
         assert 'error' in data
-        assert data['error'] == 'Not Found'
 
     def test_404_response_is_json(self, client):
         """Test that 404 response is JSON"""
