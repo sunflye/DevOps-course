@@ -141,5 +141,111 @@ PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course>
 **Connection verified ✅**
 
 ---
+## Task 2 — Application Deployment
 
+### Application Configuration
 
+#### Application Manifests
+
+- The main ArgoCD Application manifest is `k8s/argocd/application.yaml`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sunflye/DevOps-course.git
+    targetRevision: lab13
+    path: k8s/app-python
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+```
+
+#### Source and Destination Configuration
+
+- **Source:**
+  - `repoURL`: https://github.com/sunflye/DevOps-course.git
+  - `targetRevision`: lab13 (the branch with the Helm chart)
+  - `path`: k8s/app-python (path to the Helm chart)
+  - `helm.valueFiles`: values.yaml (main values file)
+- **Destination:**
+  - `server`: https://kubernetes.default.svc (the current cluster)
+  - `namespace`: default (target namespace for deployment)
+
+#### Values File Selection
+
+- The deployment uses [`k8s/app-python/values.yaml`](k8s/app-python/values.yaml) for configuration, which defines:
+  - `replicaCount: 5`
+  - Image, resources, ports, secrets, configmap, PVC, etc.
+
+---
+
+### GitOps Workflow Example
+
+1. **Initial Deployment:**
+   - Applied the Application manifest:
+     ```powershell
+     kubectl apply -f k8s\argocd\application.yaml
+     ```
+   - Observed the application in ArgoCD UI (status: OutOfSync/Missing).
+   - Performed manual sync:
+     ```powershell
+     argocd app sync python-app
+     argocd app wait python-app
+     ```
+   - Verified all resources were created:
+     ```powershell
+     PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get deployment    
+        NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+        python-app-app-python   3/3     3            3           6m2s
+        vault-agent-injector    1/1     1            1           14d
+        PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods         
+        NAME                                     READY   STATUS    RESTARTS        AGE
+        python-app-app-python-7f4dc999f9-lkjzh   1/1     Running   0               70s
+        python-app-app-python-7f4dc999f9-nzzhf   1/1     Running   0               64s
+        python-app-app-python-7f4dc999f9-shzj8   1/1     Running   0               57s
+        vault-0                                  1/1     Running   2 (67m ago)     14d
+        vault-agent-injector-86d76999fd-s7psw    1/1     Running   2 (7d12h ago)   14d
+     ```
+![](../app_python/docs/screenshots/10-confirm.jpg)
+
+2. **GitOps Test (Drift & Sync):**
+   - Changed `replicaCount` in `values.yaml` from 3 to 5.
+   - Committed and pushed the change:
+     ```powershell
+     git add k8s/app-python/values.yaml
+     git commit -m "Increase replicas to 5"
+     git push origin lab13
+     ```
+   - ArgoCD detected the drift (status: OutOfSync).
+   - Synced the application again:
+     ```powershell
+     argocd app sync python-app
+     ```
+   - Confirmed that 5 pods are running:
+     ```powershell
+     PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get pods
+        NAME                                     READY   STATUS    RESTARTS        AGE
+        python-app-app-python-7f4dc999f9-6mvbt   1/1     Running   0               18m
+        python-app-app-python-7f4dc999f9-lkjzh   1/1     Running   0               29m
+        python-app-app-python-7f4dc999f9-mtpwm   1/1     Running   0               18m
+        python-app-app-python-7f4dc999f9-nzzhf   1/1     Running   0               29m
+        python-app-app-python-7f4dc999f9-shzj8   1/1     Running   0               29m
+        vault-0                                  1/1     Running   2 (95m ago)     14d
+        vault-agent-injector-86d76999fd-s7psw    1/1     Running   2 (7d12h ago)   14d
+        PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course>
+     ```
+![](../app_python/docs/screenshots/11-confirm.jpg)
+![](../app_python/docs/screenshots/12-confirm.jpg)
+---
