@@ -33,6 +33,7 @@ readinessProbe:
 
 env:
   port: "5000"
+  dataDir: "/data"
 
 httpRoute:
   enabled: false
