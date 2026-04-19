@@ -6,6 +6,7 @@ image:
 
 service:
   type: NodePort
+  nodePort: 30082
 
 resources:
   requests:
