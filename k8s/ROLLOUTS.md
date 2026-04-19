@@ -107,3 +107,128 @@ kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 | Service mesh integration | ✅ Yes (Istio/NGINX) | ❌ No |
 | Analysis/verification steps | ✅ Yes | ❌ No |
 ---
+
+## Task 2 — Canary Deployment
+
+### 1. Strategy Configuration
+
+I converted the standard Kubernetes `Deployment` into an Argo `Rollout` in [`k8s/app-python/templates/rollout.yaml`](k8s/app-python/templates/rollout.yaml). The canary strategy is configured with the following progressive traffic shifting steps:
+
+```yaml
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}           # Manual promotion required here
+        - setWeight: 40
+        - pause: { duration: 30s }
+        - setWeight: 60
+        - pause: { duration: 30s }
+        - setWeight: 80
+        - pause: { duration: 30s }
+        - setWeight: 100
+```
+
+- **Objective:** Minimize risk by exposing the new version to only 20% of users initially.
+- **Manual Gate:** The first step requires a manual `promote` command to proceed, allowing for human verification.
+- **Automatic Progression:** Subsequent steps (40% to 100%) happen automatically with 30-second pauses to monitor stability.
+
+---
+
+### 2. Step-by-Step Rollout Progression
+
+I triggered the rollout by updating the image tag in `values.yaml` from `latest` to `2026.04.19`.
+
+#### Step 1: Initial Canary (20% Traffic)
+Argo Rollouts created a new ReplicaSet and scaled it to 20% of the desired replicas (1 pod out of 5). The rollout then entered a `Paused` state.
+
+```powershell
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl argo rollouts get rollout app-python-canary -n default
+Name:            app-python-canary
+Status:          ॥ Paused
+Message:         CanaryPauseStep
+Strategy:        Canary
+  Step:          1/9
+  SetWeight:     20
+  ActualWeight:  20
+
+NAME                                           KIND        STATUS        AGE    INFO
+⟳ app-python-canary                            Rollout     ॥ Paused      33m    
+├──# revision:5
+│  └──⧉ app-python-canary-7b6b84dd67           ReplicaSet  ✔ Healthy     32s    canary
+│     └──□ app-python-canary-7b6b84dd67-7m5lz  Pod         ✔ Running     32s    ready:1/1
+└──# revision:1
+   └──⧉ app-python-canary-6759b96fc7           ReplicaSet  ✔ Healthy     33m    stable
+```
+![](../app_python/docs/screenshots/20.jpg)
+#### Step 2: Manual Promotion
+I manually promoted the rollout to proceed past the first step:
+```powershell
+kubectl argo rollouts promote app-python-canary -n default
+```
+
+#### Step 3: Automatic Progression to 100%
+The controller automatically shifted traffic through 40%, 60%, and 80% steps, waiting 30 seconds at each stage, until reaching the final state.
+
+![](../app_python/docs/screenshots/21.jpg)
+**Final Successful State:**
+```powershell
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl argo rollouts get rollout app-python-canary -n default
+Status:          ✔ Healthy
+Strategy:        Canary
+  Step:          9/9
+  SetWeight:     100
+  ActualWeight:  100
+Images:          sunflye/devops-info-service:2026.04.19 (stable)
+
+NAME                                           KIND        STATUS         AGE   INFO
+⟳ app-python-canary                            Rollout     ✔ Healthy      47m   
+├──# revision:5
+│  └──⧉ app-python-canary-7b6b84dd67           ReplicaSet  ✔ Healthy      13m   stable
+│     ├──□ app-python-canary-7b6b84dd67-7m5lz  Pod         ✔ Running      13m   ready:1/1
+│     ├──□ app-python-canary-7b6b84dd67-7fqfw  Pod         ✔ Running      2m1s  ready:1/1
+│     ├──□ app-python-canary-7b6b84dd67-xnvdz  Pod         ✔ Running      84s   ready:1/1
+│     ├──□ app-python-canary-7b6b84dd67-4zgtk  Pod         ✔ Running      48s   ready:1/1
+│     └──□ app-python-canary-7b6b84dd67-7b7h6  Pod         ✔ Running      12s   ready:1/1
+```
+
+![](../app_python/docs/screenshots/22.jpg)
+---
+
+### 3. Abort & Rollback Demonstration
+
+During one of the deployment attempts (Revision 6), I demonstrated the ability to instantly abort the rollout and return to the stable version.
+
+**Abort Command:**
+```powershell
+kubectl argo rollouts abort app-python-canary -n default
+```
+
+**Result:** Argo Rollouts immediately scaled down the faulty canary ReplicaSet (Revision 6) and restored 100% of the traffic to the previous `stable` revision (Revision 5).
+
+```powershell
+PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl argo rollouts get rollout app-python-canary -n default
+Name:            app-python-canary
+Status:          ✖ Degraded
+Message:         RolloutAborted: Rollout aborted update to revision 6
+Strategy:        Canary
+  Step:          0/9
+  SetWeight:     0
+  ActualWeight:  0
+Images:          sunflye/devops-info-service:2026.04.19 (stable)
+
+NAME                                           KIND        STATUS        AGE    INFO
+⟳ app-python-canary                            Rollout     ✖ Degraded    54m        
+├──# revision:6
+│  └──⧉ app-python-canary-788fd4bb64           ReplicaSet  • ScaledDown  4m2s   canary
+└──# revision:5
+   └──⧉ app-python-canary-7b6b84dd67           ReplicaSet  ✔ Healthy     20m    stable
+      ├──□ app-python-canary-7b6b84dd67-7m5lz  Pod         ✔ Running     20m    ready:1/1
+      ├──□ app-python-canary-7b6b84dd67-7fqfw  Pod         ✔ Running     9m9s   ready:1/1
+      ├──□ app-python-canary-7b6b84dd67-xnvdz  Pod         ✔ Running     8m32s  ready:1/1
+      ├──□ app-python-canary-7b6b84dd67-s448m  Pod         ✔ Running     2m54s  ready:1/1
+      └──□ app-python-canary-7b6b84dd67-zfcz6  Pod         ✔ Running     2m54s  ready:1/1
+```
+
+The status `Degraded` with the message `RolloutAborted` confirms that the controller stopped the progression and ensured that the stable production environment (Revision 5) remained available with 100% traffic weight.
+![](../app_python/docs/screenshots/23.png)

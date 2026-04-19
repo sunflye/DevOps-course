@@ -59,14 +59,7 @@ spec:
             claimName: {{ include "app-python.fullname" . }}-data
       {{- end }}
   strategy:
-    canary:
-      steps:
-        - setWeight: 20
-        - pause: {}
-        - setWeight: 40
-        - pause: { duration: 30s }
-        - setWeight: 60
-        - pause: { duration: 30s }
-        - setWeight: 80
-        - pause: { duration: 30s }
-        - setWeight: 100
+    blueGreen:
+      activeService: {{ include "app-python.fullname" . }}
+      previewService: {{ include "app-python.fullname" . }}-preview
+      autoPromotionEnabled: false
