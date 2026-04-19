@@ -30,7 +30,9 @@ spec:
               protocol: TCP
           env:
             - name: PORT
-              value: {{ .Values.service.targetPort | quote }}
+              value: {{ .Values.env.port | quote }}
+            - name: DATA_DIR
+              value: {{ .Values.env.dataDir | quote }}
           livenessProbe:
             httpGet:
               path: /health
