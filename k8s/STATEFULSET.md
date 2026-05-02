@@ -98,6 +98,20 @@ By accessing pods individually via port-forwarding, I verified that they maintai
 1. Accessed `app-python-sts-0` via port-forwarding and refreshed the page 4 times.
 2. Accessed `app-python-sts-1` via port-forwarding and refreshed the page 1 time.
 
+```
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl port-forward pod/app-python-sts-0 8080:5000        
+Forwarding from 127.0.0.1:8080 -> 5000
+Forwarding from [::1]:8080 -> 5000
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl port-forward pod/app-python-sts-1 8081:5000
+Forwarding from 127.0.0.1:8081 -> 5000
+Forwarding from [::1]:8081 -> 5000
+Handling connection for 8081
+```
+
 **Evidence:**
 ```powershell
 (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
@@ -113,32 +127,30 @@ The goal of this test was to verify that data survives pod deletion and is corre
 
 **Steps and Evidence:**
 
-1. **Check value before deletion**:
-   ```powershell
-   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
-   4
-   ```
-
-2. **Delete the pod instance**:
-   ```powershell
-   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl delete pod app-python-sts-0
-   pod "app-python-sts-0" deleted
-   ```
-
-3. **Verify pod recreation**:
-   The StatefulSet controller automatically detected the missing pod with ordinal `0` and recreated it:
-   ```powershell
-   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get po
-   NAME               READY   STATUS    RESTARTS   AGE
-   app-python-sts-0   1/1     Running   0          7s
-   ```
-
+1. **Check value before deletion**
+2. **Delete the pod instance**
+3. **Verify pod recreation**
 4. **Verify data persistence**:
-   After the pod reached `Running` state, I verified that the visit count was preserved:
-   ```powershell
-   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
-   4
-   ```
+```
+так?
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
+4
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl delete pod app-python-sts-0
+pod "app-python-sts-0" deleted
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get po -w 
+NAME                                    READY   STATUS        RESTARTS      AGE
+app-python-sts-0                        1/1     Terminating   0             13m
+app-python-sts-1                        1/1     Running       0             13m
+app-python-sts-2                        1/1     Running       0             13m
+
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get po -w
+NAME                                    READY   STATUS    RESTARTS      AGE
+app-python-sts-0                        1/1     Running   0             7s
+app-python-sts-1                        1/1     Running   0             13m
+app-python-sts-2                        1/1     Running   0             13m
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
+4
+```
 
 **Conclusion:**
 The test confirms that the PVC `data-app-python-sts-0` is strictly bound to the pod instance index `0`. When the pod was deleted, the storage remained intact and was automatically remounted to the new pod, successfully preserving the application state.
