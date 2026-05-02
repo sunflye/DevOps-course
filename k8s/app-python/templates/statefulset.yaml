@@ -15,6 +15,20 @@ spec:
       labels:
         {{- include "app-python.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+        # Init Container 1: Download file
+        - name: init-download
+          image: busybox:1.36
+          command: ['sh', '-c', 'wget -O /work-dir/config.txt https://raw.githubusercontent.com/kubernetes/kubernetes/master/README.md && echo "Config downloaded successfully"']
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+        
+        # Init Container 2: Wait for Vault service
+        - name: wait-for-vault
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nslookup vault.default.svc.cluster.local; do echo waiting for vault; sleep 2; done']
+      
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -29,6 +43,13 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: workdir
+              mountPath: /shared-config
+      
+      volumes:
+        - name: workdir
+          emptyDir: {}
+      
   volumeClaimTemplates:
     - metadata:
         name: data
