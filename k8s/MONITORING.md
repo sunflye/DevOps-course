@@ -196,9 +196,21 @@ Address 1: 10.97.29.85 vault.default.svc.cluster.local
 **File Accessible in Main Container:**
 ```powershell
 PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /shared-config/config.txt
+Defaulted container "app-python" out of: app-python, init-download (init), wait-for-vault (init)
 # Kubernetes (K8s)
 
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/569/badge)]
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/569/badge)](https://bestpractices.coreinfrastructure.org/projects/569) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/kubernetes)](https://goreportcard.com/report/github.com/kubernetes/kubernetes) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kubernetes/kubernetes?sort=semver)
+
+<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png" width="100">
+
+----
+
+Kubernetes, also known as K8s, is an open source system for managing [containerized applications]   
+across multiple hosts. It provides basic mechanisms for the deployment, maintenance,
+and scaling of applications.
+
+Kubernetes builds upon a decade and a half of experience at Google running
+production workloads at scale using a system called [Borg],
 ...
 [Full README.md content from Kubernetes repository displayed]
 ```
