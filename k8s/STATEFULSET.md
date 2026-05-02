@@ -84,10 +84,10 @@ Each pod in the StatefulSet is assigned a stable DNS name following the pattern:
 
 **Evidence:**
 ```powershell
-(venv) PS> kubectl exec app-python-sts-0 -- getent hosts app-python-sts-1.app-python-sts-headless.default.svc.cluster.local
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- getent hosts app-python-sts-1.app-python-sts-headless.default.svc.cluster.local
 10.244.1.19     app-python-sts-1.app-python-sts-headless.default.svc.cluster.local
 
-(venv) PS> kubectl exec app-python-sts-0 -- getent hosts app-python-sts-2.app-python-sts-headless.default.svc.cluster.local
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- getent hosts app-python-sts-2.app-python-sts-headless.default.svc.cluster.local
 10.244.1.20     app-python-sts-2.app-python-sts-headless.default.svc.cluster.local
 ```
 
@@ -100,9 +100,9 @@ By accessing pods individually via port-forwarding, I verified that they maintai
 
 **Evidence:**
 ```powershell
-(venv) PS> kubectl exec app-python-sts-0 -- cat /data/visits
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
 4
-(venv) PS> kubectl exec app-python-sts-1 -- cat /data/visits
+(venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-1 -- cat /data/visits
 1
 ```
 This confirms that `volumeClaimTemplates` correctly provisioned independent storage for each pod ordinal.
@@ -115,20 +115,20 @@ The goal of this test was to verify that data survives pod deletion and is corre
 
 1. **Check value before deletion**:
    ```powershell
-   (venv) PS> kubectl exec app-python-sts-0 -- cat /data/visits
+   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
    4
    ```
 
 2. **Delete the pod instance**:
    ```powershell
-   (venv) PS> kubectl delete pod app-python-sts-0
+   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl delete pod app-python-sts-0
    pod "app-python-sts-0" deleted
    ```
 
 3. **Verify pod recreation**:
    The StatefulSet controller automatically detected the missing pod with ordinal `0` and recreated it:
    ```powershell
-   (venv) PS> kubectl get po
+   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl get po
    NAME               READY   STATUS    RESTARTS   AGE
    app-python-sts-0   1/1     Running   0          7s
    ```
@@ -136,7 +136,7 @@ The goal of this test was to verify that data survives pod deletion and is corre
 4. **Verify data persistence**:
    After the pod reached `Running` state, I verified that the visit count was preserved:
    ```powershell
-   (venv) PS> kubectl exec app-python-sts-0 -- cat /data/visits
+   (venv) PS D:\INNOPOLIS\DEVOPS ENGINEERING\DevOps-course> kubectl exec app-python-sts-0 -- cat /data/visits
    4
    ```
 
