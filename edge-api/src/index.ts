@@ -16,6 +16,7 @@ export default {
 
         // Health check endpoint
         if (url.pathname === '/health') {
+            console.log(`Health check performed at ${new Date().toISOString()}`);
             return new Response('OK', { status: 200 });
         }
 
