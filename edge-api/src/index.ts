@@ -26,6 +26,21 @@ export default {
             });
         }
 
+        // Edge metadata endpoint
+        if (url.pathname === '/edge') {
+            const edgeMetadata = {
+                colo: request.cf?.colo,
+                country: request.cf?.country,
+                city: request.cf?.city,
+                httpProtocol: request.cf?.httpProtocol,
+                tlsVersion: request.cf?.tlsVersion,
+                asn: request.cf?.asn,
+            };
+            return new Response(JSON.stringify(edgeMetadata, null, 2), {
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         // 404 Not Found for other paths
         return new Response('Not Found', { status: 404 });
     },
