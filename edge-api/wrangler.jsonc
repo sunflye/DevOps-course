@@ -1,0 +1,19 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "edge-api",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-05-09",
+    "vars": {
+        "API_VERSION": "v1.1.0"
+    },
+    "kv_namespaces": [
+        {
+            "binding": "EDGE_KV",
+            "id": "1600409be4814f9aaf1a48fafbb7b263"
+        }
+    ]
+}
