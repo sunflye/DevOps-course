@@ -65,33 +65,42 @@ polina@MagicBookX16:/mnt/d/INNOPOLIS/DEVOPS ENGINEERING/DevOps-course/labs/lab18
 The application is built using the following Nix derivation in `default.nix`. It pins a stable version of `nixpkgs` to ensure reproducibility, defines the application's dependencies, and specifies a custom `installPhase` because the application is a simple script, not a standard Python package.
 
 ```nix
+# 1. Function arguments: the Nix package set (nixpkgs)
 { pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/23.11.tar.gz") {} }:
 
+# 2. Use the standard builder for Python applications
 pkgs.python311.pkgs.buildPythonApplication {
+  # 3. Package name and version
   pname = "devops-info-service";
   version = "1.0.0";
 
+  # 4. Source code location
   src = ./.;
 
+  # 5. Python dependencies
   propagatedBuildInputs = with pkgs.python311.pkgs; [
     flask
     prometheus-client
   ];
 
-  # This is not a standard package with setup.py
+  # 6. Package format
+  # Tell Nix this is not a standard package with setup.py
   format = "other";
 
-  # Specify how to "install" the application
+  # 7. Installation phase
+  # Specify how to "install" our application
   installPhase = ''
     mkdir -p $out/bin
     cp app.py $out/bin/devops-info-service
     chmod +x $out/bin/devops-info-service
   '';
 
-  # Disable the check phase as we don't have tests configured here
+  # 8. Disable tests
+  # We are not running tests in this derivation
   doCheck = false;
 }
 ```
+
 
 ### 1.4: Proof of Reproducibility
 
