@@ -75,6 +75,7 @@ Current Version ID: 6de8c48b-0422-4f07-91fb-10787bb9eab6
 
 ### 2.3 Version Control
 All changes were committed to Git with the message `feat: implement initial API routes for v1.0.0`, establishing a baseline for future deployments.
+
 ---
 
 ## Task 3 — Global Edge Behavior
@@ -181,6 +182,7 @@ StatusDescription : OK
 Content           : hello from the edge
 ```
 The value persisted across deployments, as it is stored in Cloudflare's distributed KV store, not in the Worker's ephemeral memory.
+
 ---
 
 ## Task 5 — Observability & Operations
@@ -242,6 +244,7 @@ The rollback was instantly applied, and the previously active version (`33300607
 
 ![Deployment History](./edge-api/screenshots/deployments.png)
 ![Deployment History](./edge-api/screenshots/history.png)
+
 After rollback:
 ![Deployment History](./edge-api/screenshots/rollback.png)
 ---
@@ -265,9 +268,9 @@ After rollback:
 
 ### 6.2 Evidence
 *(All evidence is detailed in previous tasks)*
-- **Cloudflare Dashboard:** Screenshot of metrics is in Task 5.2.
-- **/edge JSON Response:** Included in Task 3.2.
-- **Log/Metrics Screenshot:** Live log output is in Task 5.1.
+- **Cloudflare Dashboard:** Screenshot of metrics is in Task 5
+- **/edge JSON Response:** Included in Task 3
+- **Log/Metrics Screenshot:** Live log output is in Task 5
 
 ### 6.3 Kubernetes vs Cloudflare Workers Comparison
 
