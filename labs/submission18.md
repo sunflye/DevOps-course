@@ -428,10 +428,14 @@ lab2-app                 v1      126accac9217   5 minutes ago    204MB
 devops-info-service-nix  1.0.0   475877efdd11   56 years ago     477MB
 ```
 
-| Metric     | Lab 2 Dockerfile              | Lab 18 Nix `dockerTools`      |
-| ---------- | ----------------------------- | ----------------------------- |
-| Image Size | ~204MB                        | ~477MB                        |
-| Analysis   | Relies on a shared base image | Bundles all dependencies from `/nix/store` for a self-contained artifact. This increases size but removes reliance on external base images. |
+| Metric                  | Lab 2 Dockerfile                               | Lab 18 Nix `dockerTools`                         |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| **Image Size**          | ~204MB                                         | ~477MB                                           |
+| **Analysis**            | Relies on a shared `python:slim` base image.   | Bundles all dependencies for a self-contained artifact. Size is larger with the default builder, but advanced techniques can reduce it. |
+| **Reproducibility**     | ❌ Different hashes on each build              | ✅ Identical hashes on each build                |
+| **Build Caching**       | Layer-based (can be broken by timestamps)      | Content-addressable (perfect caching)            |
+| **Base Image Dependency** | Yes (`python:3.13-slim`)                       | No base image needed                             |
+
 
 #### Test 3: Layer Analysis
 
